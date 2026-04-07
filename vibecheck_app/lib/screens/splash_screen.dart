@@ -1,6 +1,6 @@
-// lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/emotion_galaxy.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,58 +13,50 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateAfterDelay();
+    _navigate();
   }
 
-  Future<void> _navigateAfterDelay() async {
-    // รอ 2 วินาที แสดง splash
-    await Future.delayed(const Duration(seconds: 2));
-    
+  Future<void> _navigate() async {
+    await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
-    
-    // ตรวจว่า login อยู่มั้ย
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+    Navigator.pushReplacementNamed(
+      context,
+      user != null ? '/home' : '/login',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF3D1C8D), Color(0xFF7B5EA7)],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // โลโก้ (ทรงกลมสีม่วงเข้ม จาก Figma)
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.2),
-                ),
-                child: const Icon(Icons.bubble_chart, 
-                  size: 70, color: Colors.white),
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Spacer(),
+            // Galaxy widget ที่เพื่อนทำ
+            const EmotionGalaxy(size: 280),
+            const Spacer(),
+            // ข้อความล่าง
+            const Text(
+              'VibeCheck',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
-              const SizedBox(height: 20),
-              const Text('VibeCheck',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold,
-                  color: Colors.white)),
-              const Text('Where Mood Meets Metrics',
-                style: TextStyle(fontSize: 14, color: Colors.white70)),
-            ],
-          ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Where Mood Meets Metrics',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.black45,
+              ),
+            ),
+            const SizedBox(height: 48),
+          ],
         ),
       ),
     );

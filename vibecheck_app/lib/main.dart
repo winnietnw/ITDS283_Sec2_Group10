@@ -14,6 +14,7 @@ import 'screens/settings_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/timer_running_screen.dart';
+import 'screens/forgot_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,7 @@ class VibeCheckApp extends StatelessWidget {
         '/settings': (context) => const SettingsScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/timer-running': (context) => const TimerRunningScreen(totalSeconds: 1800, focusLabel: 'Study', mode: 'Normal',),
+        '/forgot-password': (context) => const ForgotPasswordScreen(),
       },
     );
   }
