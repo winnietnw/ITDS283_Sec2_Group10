@@ -1,7 +1,7 @@
-// lib/screens/emotion_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/header.dart';
+import '../widgets/emotion_colors.dart';
 
 class EmotionScreen extends StatefulWidget {
   const EmotionScreen({super.key});
@@ -11,97 +11,185 @@ class EmotionScreen extends StatefulWidget {
 }
 
 class _EmotionScreenState extends State<EmotionScreen> {
-  String? _selectedEmotion;
-  final _user = FirebaseAuth.instance.currentUser;
+  String selected = "";
 
-  // รายการ emotion จาก Figma (emoji + ชื่อ)
-  final List<Map<String, dynamic>> _emotions = [
-    {'emoji': '😊', 'label': 'Happy', 'type': 'positive'},
-    {'emoji': '😌', 'label': 'Calm', 'type': 'positive'},
-    {'emoji': '😄', 'label': 'Excited', 'type': 'positive'},
-    {'emoji': '🥰', 'label': 'Loved', 'type': 'positive'},
-    {'emoji': '😐', 'label': 'Meh', 'type': 'neutral'},
-    {'emoji': '😤', 'label': 'Frustrated', 'type': 'negative'},
-    {'emoji': '😢', 'label': 'Sad', 'type': 'negative'},
-    {'emoji': '😰', 'label': 'Anxious', 'type': 'negative'},
+  final List<Map<String, String>> moods = const [
+    {"type": "happy", "emoji": "😊", "label": "Happy"},
+    {"type": "calm", "emoji": "😌", "label": "Calm"},
+    {"type": "neutral", "emoji": "😐", "label": "Neutral"},
+    {"type": "stressed", "emoji": "😰", "label": "Stressed"},
+    {"type": "love", "emoji": "🥰", "label": "Love"},
+    {"type": "burnout", "emoji": "🫠", "label": "Burn out"},
+    {"type": "angry", "emoji": "😡", "label": "Angry"},
+    {"type": "sad", "emoji": "😭", "label": "Sad"},
   ];
 
-  Future<void> _saveEmotion() async {
-    if (_selectedEmotion == null) return;
-    
-    // บันทึกลง Firestore
+  Future<void> saveEmotion() async {
+    if (selected.isEmpty) return;
+
     await FirebaseFirestore.instance.collection('emotions').add({
-      'userId': _user?.uid,
-      'emotion': _selectedEmotion,
-      'type': _emotions.firstWhere(
-        (e) => e['label'] == _selectedEmotion)['type'],
-      'timestamp': FieldValue.serverTimestamp(),
+      "type": selected,
+      "time": Timestamp.now(),
     });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Emotion saved! ⭐')));
-    }
+    if (!mounted) return;
+    Navigator.pushNamed(context, '/analytics_emotion');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Emotion')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('How are you feeling today?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            
-            // Grid ของ emotion emoji
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 4,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              children: _emotions.map((emotion) {
-                final isSelected = _selectedEmotion == emotion['label'];
-                return GestureDetector(
-                  onTap: () => setState(() => 
-                    _selectedEmotion = emotion['label']),
-                  child: Container(
+      backgroundColor: const Color(0xFFE8EEF9),
+
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            /// 🔥 HEADER FIXED (ไม่ overflow แล้ว)
+            SliverAppBar(
+              pinned: true,
+              elevation: 0,
+              backgroundColor: const Color(0xFFE8EEF9),
+              surfaceTintColor: Colors.transparent,
+              automaticallyImplyLeading: false,
+              toolbarHeight: 112, // 🔥 สำคัญ แก้ overflow
+              flexibleSpace: const Padding(
+                padding: EdgeInsets.only(top: 10),
+                child: AppHeader(),
+              ),
+            ),
+
+            /// 🔽 CONTENT
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                     decoration: BoxDecoration(
-                      color: isSelected 
-                        ? const Color(0xFF7B5EA7).withValues(alpha: 0.2)
-                        : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      border: isSelected 
-                        ? Border.all(color: const Color(0xFF7B5EA7), width: 2)
-                        : null,
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
+
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(emotion['emoji']!, style: const TextStyle(fontSize: 28)),
-                        const SizedBox(height: 4),
-                        Text(emotion['label']!, 
-                          style: const TextStyle(fontSize: 10)),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "How are you feeling today?",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF253142),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        GridView.builder(
+                          itemCount: moods.length,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 0.82,
+                              ),
+                          itemBuilder: (context, index) {
+                            final mood = moods[index];
+                            return _buildMoodCard(mood);
+                          },
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: saveEmotion,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFD6E0),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text(
+                              "Save Emotion",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF253142),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-            
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _selectedEmotion != null ? _saveEmotion : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB6C1),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+
+                  const SizedBox(height: 24),
+                ],
               ),
-              child: const Text('Save Emotion', 
-                style: TextStyle(color: Colors.white, fontSize: 16)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoodCard(Map<String, String> mood) {
+    final type = mood["type"] ?? "neutral";
+    final emoji = mood["emoji"] ?? "😐";
+    final label = mood["label"] ?? "";
+    final isActive = selected == type;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selected = type;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: EmotionColors.get(type),
+          borderRadius: BorderRadius.circular(14),
+          border: isActive
+              ? Border.all(color: const Color(0xFF5B7383), width: 2)
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 25)),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.1,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4A5563),
+                ),
+              ),
             ),
           ],
         ),
