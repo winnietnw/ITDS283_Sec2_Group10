@@ -17,6 +17,7 @@ import 'screens/settings_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/timer_running_screen.dart';
+import 'screens/forgot_password_screen.dart';
 import 'screens/reminders_sounds_screen.dart';
 import 'screens/goals_categories_screen.dart';
 import 'screens/new_target_screen.dart';
@@ -71,11 +72,8 @@ class VibeCheckApp extends StatelessWidget {
           '/analytics_emotion': (context) => const AnalyticsEmotionScreen(),
           '/settings': (context) => const SettingsScreen(),
           '/profile': (context) => const ProfileScreen(),
-          '/timer-running': (context) => const TimerRunningScreen(
-                totalSeconds: 1800,
-                focusLabel: 'Study',
-                mode: 'Normal',
-              ),
+          '/timer-running': (context) => const TimerRunningScreen(totalSeconds: 1800, focusLabel: 'Study', mode: 'Normal',),
+          '/forgot-password': (context) => const ForgotPasswordScreen(),
           '/reminders-sounds': (context) => const RemindersSoundsScreen(),
           '/goals-categories' : (context) => const GoalsCategoriesScreen(),
           '/new-target': (context) => const NewTargetScreen(),

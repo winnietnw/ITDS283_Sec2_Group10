@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
@@ -166,6 +167,7 @@ class _HomeScreenState extends State<HomeScreen>
                   'title': text,
                   'done': false,
                   'createdAt': Timestamp.now(),
+                  'userId': FirebaseAuth.instance.currentUser?.uid,
                 });
 
                 if (mounted) {
@@ -193,14 +195,9 @@ class _HomeScreenState extends State<HomeScreen>
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('emotions')
-              .where(
-                'time',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(weekRange.start),
-              )
-              .where(
-                'time',
-                isLessThanOrEqualTo: Timestamp.fromDate(weekRange.end),
-              )
+              .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+              .where('time',isGreaterThanOrEqualTo: Timestamp.fromDate(weekRange.start),)
+              .where('time',isLessThanOrEqualTo: Timestamp.fromDate(weekRange.end),)
               .snapshots(),
           builder: (context, emotionSnapshot) {
             final emotionDocs = emotionSnapshot.data?.docs ?? [];
@@ -250,6 +247,7 @@ class _HomeScreenState extends State<HomeScreen>
             return StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('tasks')
+                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                   .orderBy('createdAt', descending: false)
                   .snapshots(),
               builder: (context, taskSnapshot) {

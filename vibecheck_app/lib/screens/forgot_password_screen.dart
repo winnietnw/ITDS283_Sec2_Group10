@@ -12,15 +12,57 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
-  bool _sent = false;
 
   Future<void> _recover() async {
-    if (_emailController.text.trim().isEmpty) return;
-    setState(() => _isLoading = true);
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(
-          email: _emailController.text.trim());
-      setState(() => _sent = true);
+  if (_emailController.text.trim().isEmpty) return;
+  setState(() => _isLoading = true);
+  try {
+    await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: _emailController.text.trim());
+    
+    // เปลี่ยนจาก setState(_sent) เป็น showDialog แทน
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(ctx),
+                  child: const Icon(Icons.close,
+                      size: 18, color: Colors.black38),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'A recovery link has been sent to your inbox.\nPlease check your email to continue.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+              const SizedBox(height: 16),
+            ]),
+          ),
+        ),
+      );
+    }
+  } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.code == 'user-not-found'
+                  ? 'No account found with this email'
+                  : 'Something went wrong',
+            ),
+          ),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -116,23 +158,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  // Success message
-                  if (_sent)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F7F7),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        'A recovery link has been sent to your inbox.\nPlease check your email to continue.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.black54),
-                      ),
-                    ),
 
                   // Recover button
                   Container(
