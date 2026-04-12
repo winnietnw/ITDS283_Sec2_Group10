@@ -20,12 +20,12 @@ class SettingsScreen extends StatelessWidget {
       {
         'icon': Icons.devices_outlined,
         'title': 'Multi-device Support',
-        'route': '/multidevice',
+        'route': '/multi-device-support',
       },
       {
         'icon': Icons.info_outline,
         'title': 'About Us',
-        'route': '/about_us',
+        'route': '/about-us',
       },
     ];
 
