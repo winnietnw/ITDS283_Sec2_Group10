@@ -21,6 +21,10 @@ import 'screens/forgot_password_screen.dart';
 import 'screens/reminders_sounds_screen.dart';
 import 'screens/goals_categories_screen.dart';
 import 'screens/new_target_screen.dart';
+import 'screens/multi_device_support_screen.dart';
+import 'screens/about_us_screen.dart';
+import 'screens/feedback_screen.dart';
+import 'screens/privacy_screen.dart';
 
 // widgets
 import 'widgets/bottom_nav_bar.dart';
@@ -53,6 +57,14 @@ class VibeCheckApp extends StatelessWidget {
       child: MaterialApp( // ✅ ต้องอยู่ตรงนี้
         title: 'VibeCheck',
         debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          return ScrollConfiguration(
+            behavior: const MaterialScrollBehavior().copyWith(
+              physics: const BouncingScrollPhysics(),
+            ),
+            child: child!,
+          );
+        },
         theme: ThemeData(
           scaffoldBackgroundColor: AppColors.background,
           fontFamily: 'Poppins',
@@ -72,11 +84,19 @@ class VibeCheckApp extends StatelessWidget {
           '/analytics_emotion': (context) => const AnalyticsEmotionScreen(),
           '/settings': (context) => const SettingsScreen(),
           '/profile': (context) => const ProfileScreen(),
-          '/timer-running': (context) => const TimerRunningScreen(totalSeconds: 1800, focusLabel: 'Study', mode: 'Normal',),
+          '/timer-running': (context) => const TimerRunningScreen(
+                totalSeconds: 1800,
+                focusLabel: 'Study',
+                mode: 'Normal',
+              ),
           '/forgot-password': (context) => const ForgotPasswordScreen(),
           '/reminders-sounds': (context) => const RemindersSoundsScreen(),
           '/goals-categories' : (context) => const GoalsCategoriesScreen(),
           '/new-target': (context) => const NewTargetScreen(),
+          '/multi-device-support': (context) => const MultiDeviceSupportScreen(),
+          '/about-us': (context) => const AboutUsScreen(),
+          '/feedback': (context) => const FeedbackScreen(),
+          '/privacy': (context) => const PrivacyScreen(),
         },
       ),
     );
