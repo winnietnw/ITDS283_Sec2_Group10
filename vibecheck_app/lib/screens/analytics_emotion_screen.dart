@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
@@ -189,6 +190,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
               final range = _weekRange(0);
               final snap = await FirebaseFirestore.instance
                   .collection('emotions')
+                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                   .where(
                     'time',
                     isGreaterThanOrEqualTo: Timestamp.fromDate(range.start),
@@ -223,6 +225,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
           key: ValueKey(_weekOffset), // ✅ rebuild stream เมื่อ offset เปลี่ยน
           stream: FirebaseFirestore.instance
               .collection('emotions')
+              .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
               .where(
                 'time',
                 isGreaterThanOrEqualTo: Timestamp.fromDate(range.start),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
 
@@ -30,6 +31,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
     await FirebaseFirestore.instance.collection('emotions').add({
       "type": selected,
       "time": Timestamp.now(),
+      "userId": FirebaseAuth.instance.currentUser?.uid,
     });
 
     if (!mounted) return;
