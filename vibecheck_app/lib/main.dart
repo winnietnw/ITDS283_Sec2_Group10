@@ -19,6 +19,7 @@ import 'screens/signup_screen.dart';
 import 'screens/timer_running_screen.dart';
 import 'screens/reminders_sounds_screen.dart';
 import 'screens/goals_categories_screen.dart';
+import 'screens/new_target_screen.dart';
 
 // widgets
 import 'widgets/bottom_nav_bar.dart';
@@ -77,6 +78,7 @@ class VibeCheckApp extends StatelessWidget {
               ),
           '/reminders-sounds': (context) => const RemindersSoundsScreen(),
           '/goals-categories' : (context) => const GoalsCategoriesScreen(),
+          '/new-target': (context) => const NewTargetScreen(),
         },
       ),
     );

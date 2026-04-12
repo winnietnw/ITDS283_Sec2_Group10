@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/header.dart';
+import '../widgets/animated_action_button.dart';
+import '../data/goal_templates.dart';
+import 'goal_progress_screen.dart';
 
 class GoalsCategoriesScreen extends StatefulWidget {
   const GoalsCategoriesScreen({super.key});
@@ -10,17 +13,12 @@ class GoalsCategoriesScreen extends StatefulWidget {
 }
 
 class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
-  int selectedTab = 0; // 0 = Classification, 1 = Goal
+  int selectedTab = 0;
   final TextEditingController _controller = TextEditingController();
 
-  CollectionReference<Map<String, dynamic>> get _currentCollection {
-    return FirebaseFirestore.instance.collection(
-      selectedTab == 0 ? 'classifications' : 'goals',
-    );
+  CollectionReference<Map<String, dynamic>> get _classificationCollection {
+    return FirebaseFirestore.instance.collection('classifications');
   }
-
-  String get _currentTypeLabel =>
-      selectedTab == 0 ? 'classification' : 'goal';
 
   @override
   void dispose() {
@@ -39,7 +37,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
             borderRadius: BorderRadius.circular(18),
           ),
           title: Text(
-            selectedTab == 0 ? 'New Classification' : 'New Goal',
+            selectedTab == 0 ? 'New Classification' : 'New Target',
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           content: TextField(
@@ -55,12 +53,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: _submitNewItem,
-              ),
             ),
-            onSubmitted: (_) => _submitNewItem(),
           ),
           actions: [
             TextButton(
@@ -90,29 +83,31 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    final snap = await _currentCollection
-        .orderBy('order', descending: true)
-        .limit(1)
-        .get();
+    if (selectedTab == 0) {
+      final snap = await _classificationCollection
+          .orderBy('order', descending: true)
+          .limit(1)
+          .get();
 
-    int nextOrder = 0;
-    if (snap.docs.isNotEmpty) {
-      final lastOrder = snap.docs.first.data()['order'];
-      if (lastOrder is int) {
-        nextOrder = lastOrder + 1;
+      int nextOrder = 0;
+      if (snap.docs.isNotEmpty) {
+        final lastOrder = snap.docs.first.data()['order'];
+        if (lastOrder is int) {
+          nextOrder = lastOrder + 1;
+        }
       }
-    }
 
-    await _currentCollection.add({
-      'title': text,
-      'order': nextOrder,
-      'createdAt': Timestamp.now(),
-    });
+      await _classificationCollection.add({
+        'title': text,
+        'order': nextOrder,
+        'createdAt': Timestamp.now(),
+      });
+    }
 
     if (mounted) Navigator.pop(context);
   }
 
-  Future<void> _editItem(String docId, String oldValue) async {
+  Future<void> _editClassification(String docId, String oldValue) async {
     final controller = TextEditingController(text: oldValue);
 
     await showDialog(
@@ -157,7 +152,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                 final text = controller.text.trim();
                 if (text.isEmpty) return;
 
-                await _currentCollection.doc(docId).update({
+                await _classificationCollection.doc(docId).update({
                   'title': text,
                 });
 
@@ -174,18 +169,19 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     );
   }
 
-  Future<void> _deleteItem(String docId) async {
-    await _currentCollection.doc(docId).delete();
+  Future<void> _deleteClassification(String docId) async {
+    await _classificationCollection.doc(docId).delete();
   }
 
-  Future<void> _reorderItems(
+  Future<void> _reorderClassification(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
     int oldIndex,
     int newIndex,
   ) async {
     if (newIndex > oldIndex) newIndex--;
 
-    final reordered = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(docs);
+    final reordered =
+        List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(docs);
     final moved = reordered.removeAt(oldIndex);
     reordered.insert(newIndex, moved);
 
@@ -198,10 +194,16 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     await batch.commit();
   }
 
+  GoalTemplate? _findGoalById(String id) {
+    final goals = buildGoalTemplatesForCurrentMonth();
+    for (final goal in goals) {
+      if (goal.id == id) return goal;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final collectionName = selectedTab == 0 ? 'classifications' : 'goals';
-
     return Scaffold(
       backgroundColor: const Color(0xFFE8E8F8),
       body: SafeArea(
@@ -273,15 +275,27 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                      stream: FirebaseFirestore.instance
-                          .collection(collectionName)
-                          .orderBy('order')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        final docs = snapshot.data?.docs ?? [];
+                    if (selectedTab == 0)
+                      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: _classificationCollection
+                            .orderBy('order')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          final docs = snapshot.data?.docs ?? [];
 
-                        if (docs.isNotEmpty) {
+                          if (docs.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.only(top: 180),
+                              child: Text(
+                                'No classification has been created yet',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            );
+                          }
+
                           return Column(
                             children: [
                               Align(
@@ -306,163 +320,230 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
+                              ReorderableListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: docs.length,
+                                buildDefaultDragHandles: false,
+                                onReorder: (oldIndex, newIndex) {
+                                  _reorderClassification(
+                                    docs,
+                                    oldIndex,
+                                    newIndex,
+                                  );
+                                },
+                                itemBuilder: (context, index) {
+                                  final doc = docs[index];
+                                  final title =
+                                      doc.data()['title']?.toString() ?? '';
 
-                              if (selectedTab == 0)
-                                ReorderableListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: docs.length,
-                                  buildDefaultDragHandles: false,
-                                  onReorder: (oldIndex, newIndex) {
-                                    _reorderItems(docs, oldIndex, newIndex);
-                                  },
-                                  itemBuilder: (context, index) {
-                                    final doc = docs[index];
-                                    final title =
-                                        doc.data()['title']?.toString() ?? '';
-
-                                    return Container(
-                                      key: ValueKey(doc.id),
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.88),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              title,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.black87,
-                                              ),
+                                  return Container(
+                                    key: ValueKey(doc.id),
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.88),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            title,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black87,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
-                                          PopupMenuButton<String>(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            onSelected: (value) {
-                                              if (value == 'edit') {
-                                                _editItem(doc.id, title);
-                                              } else if (value == 'delete') {
-                                                _deleteItem(doc.id);
-                                              }
-                                            },
-                                            itemBuilder: (context) => const [
-                                              PopupMenuItem<String>(
-                                                value: 'edit',
-                                                child: Text('Edit'),
-                                              ),
-                                              PopupMenuItem<String>(
-                                                value: 'delete',
-                                                child: Text('Delete'),
-                                              ),
-                                            ],
-                                            child: const Icon(
-                                              Icons.more_vert,
-                                              color: Colors.black54,
-                                            ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        PopupMenuButton<String>(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
-                                          const SizedBox(width: 8),
-                                          ReorderableDragStartListener(
-                                            index: index,
-                                            child: const Icon(
-                                              Icons.drag_handle,
-                                              color: Colors.black54,
+                                          onSelected: (value) {
+                                            if (value == 'edit') {
+                                              _editClassification(
+                                                doc.id,
+                                                title,
+                                              );
+                                            } else if (value == 'delete') {
+                                              _deleteClassification(doc.id);
+                                            }
+                                          },
+                                          itemBuilder: (context) => const [
+                                            PopupMenuItem<String>(
+                                              value: 'edit',
+                                              child: Text('Edit'),
                                             ),
+                                            PopupMenuItem<String>(
+                                              value: 'delete',
+                                              child: Text('Delete'),
+                                            ),
+                                          ],
+                                          child: const Icon(
+                                            Icons.more_vert,
+                                            color: Colors.black54,
                                           ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                )
-                              else
-                                Column(
-                                  children: docs.map((doc) {
-                                    final title =
-                                        doc.data()['title']?.toString() ?? '';
-
-                                    return Container(
-                                      width: double.infinity,
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.88),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              title,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ReorderableDragStartListener(
+                                          index: index,
+                                          child: const Icon(
+                                            Icons.drag_handle,
+                                            color: Colors.black54,
                                           ),
-                                          const SizedBox(width: 8),
-                                          PopupMenuButton<String>(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            onSelected: (value) {
-                                              if (value == 'edit') {
-                                                _editItem(doc.id, title);
-                                              } else if (value == 'delete') {
-                                                _deleteItem(doc.id);
-                                              }
-                                            },
-                                            itemBuilder: (context) => const [
-                                              PopupMenuItem<String>(
-                                                value: 'edit',
-                                                child: Text('Edit'),
-                                              ),
-                                              PopupMenuItem<String>(
-                                                value: 'delete',
-                                                child: Text('Delete'),
-                                              ),
-                                            ],
-                                            child: const Icon(
-                                              Icons.more_vert,
-                                              color: Colors.black54,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           );
-                        }
+                        },
+                      )
+                    else
+                      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                        stream: FirebaseFirestore.instance
+                            .collection('goal_progress')
+                            .doc('current_active')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          final data = snapshot.data?.data();
 
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 180),
-                          child: Text(
-                            'No $_currentTypeLabel has been created yet',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
+                          if (data == null) {
+                            return SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.58,
+                              child: const Center(
+                                child: Text(
+                                  'No ongoing goals',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final goalId = data['goalId']?.toString() ?? '';
+                          final title = data['title']?.toString() ?? 'Goal';
+                          final colorValue =
+                              data['colorValue'] as int? ?? 0xFFE9D9A8;
+                          final selectedDay = data['selectedDay'] as int? ?? 1;
+                          final totalDays = data['totalDays'] as int? ?? 30;
+                          final completedDays =
+                              (data['completedDays'] as List<dynamic>? ?? [])
+                                  .map((e) => e as int)
+                                  .toList();
+
+                          final activeGoal = _findGoalById(goalId);
+
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 116),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                              decoration: BoxDecoration(
+                                color: Color(colorValue),
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Ongoing Goal',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black54,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      height: 1.35,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Day $selectedDay of $totalDays',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Completed days: ${completedDays.length}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.white.withOpacity(0.95),
+                                      foregroundColor: Colors.black87,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    onPressed: activeGoal == null
+                                        ? null
+                                        : () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    GoalProgressScreen(
+                                                  goal: activeGoal,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                    child: const Text(
+                                      'Continue',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -470,32 +551,16 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
           ],
         ),
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF232531),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          onPressed: _showAddDialog,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          label: const Text(
-            'New category',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-            ),
-          ),
-          icon: const Icon(Icons.add, color: Colors.white),
-        ),
+      floatingActionButton: AnimatedActionButton(
+        text: selectedTab == 0 ? 'New category' : 'New Target',
+        onTap: () {
+          if (selectedTab == 0) {
+            _showAddDialog();
+          } else {
+            Navigator.pushNamed(context, '/new-target');
+          }
+        },
+        darkStyle: false,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );

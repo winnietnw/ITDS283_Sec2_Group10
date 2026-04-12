@@ -1,7 +1,6 @@
 // lib/screens/timer_screen.dart
 import 'package:flutter/material.dart';
 import 'timer_running_screen.dart';
-import '../widgets/header.dart';
 
 class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
@@ -167,6 +166,7 @@ class _TimerScreenState extends State<TimerScreen> {
                     ),
                   );
                 },
+                icon: const Icon(Icons.play_arrow, color: Colors.white),
                 label: const Text('Start ▶',
                     style: TextStyle(color: Colors.white, fontSize: 16)),
                 style: ElevatedButton.styleFrom(
