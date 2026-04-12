@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
+import 'analytics_emotion_screen.dart';
 
 class EmotionScreen extends StatefulWidget {
   const EmotionScreen({super.key});
@@ -13,6 +14,8 @@ class EmotionScreen extends StatefulWidget {
 
 class _EmotionScreenState extends State<EmotionScreen> {
   String selected = "";
+  bool _checked = false;
+  bool _alreadySaved = false;
 
   final List<Map<String, String>> moods = const [
     {"type": "happy", "emoji": "😊", "label": "Happy"},
@@ -25,6 +28,43 @@ class _EmotionScreenState extends State<EmotionScreen> {
     {"type": "sad", "emoji": "😭", "label": "Sad"},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _checkTodayEmotion();
+  }
+
+  // เช็คว่าวันนี้บันทึก emotion แล้วยัง
+  Future<void> _checkTodayEmotion() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final snap = await FirebaseFirestore.instance
+        .collection('emotions')
+        .where('userId', isEqualTo: uid)
+        .where('time',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('time', isLessThan: Timestamp.fromDate(endOfDay))
+        .limit(1)
+        .get();
+
+    if (!mounted) return;
+
+    // ถ้าบันทึกแล้ววันนี้ → แสดงหน้า analytics_emotion แทน ไม่ต้อง navigate
+    if (snap.docs.isNotEmpty) {
+      setState(() {
+        _checked = true;
+        _alreadySaved = true; // เพิ่ม flag นี้
+      });
+    } else {
+      setState(() => _checked = true);
+    }
+  }
+
   Future<void> saveEmotion() async {
     if (selected.isEmpty) return;
 
@@ -35,14 +75,25 @@ class _EmotionScreenState extends State<EmotionScreen> {
     });
 
     if (!mounted) return;
-    Navigator.pushNamed(context, '/analytics_emotion');
+    setState(() => _alreadySaved = true);
   }
 
   @override
   Widget build(BuildContext context) {
+    // ระหว่างเช็ค แสดง loading
+    if (!_checked) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFE8EEF9),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    // ถ้าบันทึกแล้ว → แสดง analytics emotion แทน
+    if (_alreadySaved) {
+      return const AnalyticsEmotionScreen();
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFE8EEF9),
-
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

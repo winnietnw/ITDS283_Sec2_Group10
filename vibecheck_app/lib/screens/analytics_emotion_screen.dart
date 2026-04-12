@@ -308,21 +308,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                GestureDetector(
-                                  onTap: () => Navigator.pop(context),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE8EEF9),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Icon(
-                                      Icons.arrow_back_ios_new,
-                                      size: 14,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ),
+                                const SizedBox(width: 26),
                                 Column(
                                   children: [
                                     Text(
