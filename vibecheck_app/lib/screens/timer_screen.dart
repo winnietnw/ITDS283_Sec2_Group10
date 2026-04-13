@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/header.dart';
 import 'timer_running_screen.dart';
 import 'analytics_screen.dart';
@@ -18,7 +20,6 @@ class _TimerScreenState extends State<TimerScreen>
   String _plan = '';
   int _selectedMinutes = 30;
 
-  // animation สำหรับเข็มนาฬิกา (ตกแต่ง ไม่ได้เดินจริง)
   late AnimationController _tickController;
 
   @override
@@ -36,10 +37,22 @@ class _TimerScreenState extends State<TimerScreen>
     super.dispose();
   }
 
+  // ✅ สีของแต่ละ mode
+  static Color _modeColor(String mode) {
+    switch (mode) {
+      case 'Focus':
+        return const Color.fromARGB(255, 144, 191, 220);
+      case 'Strict':
+        return const Color.fromARGB(255, 226, 138, 135);
+      default:
+        return const Color.fromARGB(255, 151, 152, 151);
+    }
+  }
+
   void _openSetPlan() async {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: false, // ✅ ไม่ scroll
       backgroundColor: Colors.transparent,
       builder: (_) => _SetPlanSheet(
         initialPlan: _plan,
@@ -62,14 +75,19 @@ class _TimerScreenState extends State<TimerScreen>
       backgroundColor: const Color(0xFFEFFFDF),
       body: SafeArea(
         child: CustomScrollView(
+          physics: const NeverScrollableScrollPhysics(), // ✅ หน้าหลักก็ไม่ scroll
           slivers: [
             SliverAppBar(
               pinned: true,
+              floating: false,
+              snap: false,
               elevation: 0,
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               automaticallyImplyLeading: false,
-              toolbarHeight: 112,
+              toolbarHeight: 106,
+              collapsedHeight: 106,
+              expandedHeight: 106,
               flexibleSpace: const Padding(
                 padding: EdgeInsets.only(top: 10),
                 child: AppHeader(),
@@ -80,17 +98,16 @@ class _TimerScreenState extends State<TimerScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 8),
 
-                    // History icon row
+                    // History icon
                     Row(
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const AnalyticsScreen(),
-                            ),
+                                builder: (_) => const AnalyticsScreen()),
                           ),
                           child: Container(
                             width: 36,
@@ -99,11 +116,8 @@ class _TimerScreenState extends State<TimerScreen>
                               color: Colors.white.withOpacity(0.7),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
-                              Icons.history,
-                              size: 18,
-                              color: Colors.black54,
-                            ),
+                            child: const Icon(Icons.history,
+                                size: 18, color: Colors.black54),
                           ),
                         ),
                       ],
@@ -111,32 +125,36 @@ class _TimerScreenState extends State<TimerScreen>
 
                     const SizedBox(height: 24),
 
-                    // Set Plan button
+                    // Set Plan button — สีตาม mode ที่เลือก
                     GestureDetector(
                       onTap: _openSetPlan,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                            horizontal: 20, vertical: 9),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFB3D9FF), Color(0xFFD4B8F0)],
-                          ),
+                          color: _modeColor(_selectedMode).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color:
+                                _modeColor(_selectedMode).withOpacity(0.4),
+                            width: 1,
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               _plan.isEmpty ? 'Set Plan' : _plan,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: _modeColor(_selectedMode),
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(Icons.chevron_right,
-                                size: 16, color: Colors.white),
+                            Icon(Icons.chevron_right,
+                                size: 16,
+                                color: _modeColor(_selectedMode)),
                           ],
                         ),
                       ),
@@ -144,43 +162,88 @@ class _TimerScreenState extends State<TimerScreen>
 
                     const SizedBox(height: 40),
 
-                    // Analog clock
-                    AnimatedBuilder(
-                      animation: _tickController,
-                      builder: (_, __) => CustomPaint(
-                        size: const Size(200, 200),
-                        painter: _AnalogClockPainter(
-                          minutes: _selectedMinutes,
-                          progress: _tickController.value,
-                        ),
-                      ),
+                    // Clock
+                    _TickFadeClock(
+                      minutes: _selectedMinutes,
+                      plan: _plan.isEmpty ? 'Focus' : _plan,
+                    ),
+
+                    const SizedBox(height: 36),
+
+                    // Mode chips — แต่ละอันสีของตัวเอง
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: ['Normal', 'Focus', 'Strict'].map((mode) {
+                        final isSelected = _selectedMode == mode;
+                        final modeColor = _modeColor(mode);
+                        return GestureDetector(
+                          onTap: () =>
+                              setState(() => _selectedMode = mode),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            margin:
+                                const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? modeColor
+                                  : Colors.white.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color:
+                                            modeColor.withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      )
+                                    ]
+                                  : [],
+                            ),
+                            child: Text(
+                              mode,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.black45,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
 
                     const SizedBox(height: 40),
 
-                    // Start button
+                    // ✅ Start button — gradient เด่นกว่า Set Plan
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => TimerRunningScreen(
                             totalSeconds: _selectedMinutes * 60,
-                            focusLabel: _plan.isEmpty ? 'Focus' : _plan,
+                            focusLabel:
+                                _plan.isEmpty ? 'Focus' : _plan,
                             mode: _selectedMode,
                           ),
                         ),
                       ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 36, vertical: 14),
+                            horizontal: 48, vertical: 16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(30),
+                          color: const Color(0xFF7B5EA7),
+                          borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: const Color(0xFF7B5EA7).withOpacity(0.4),
                               blurRadius: 16,
-                              offset: const Offset(0, 4),
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
@@ -188,15 +251,17 @@ class _TimerScreenState extends State<TimerScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: const [
                             Text(
-                              'Start ',
+                              'Start',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.black87,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
                               ),
                             ),
+                            SizedBox(width: 8),
                             Icon(Icons.play_arrow_rounded,
-                                size: 20, color: Colors.black87),
+                                size: 20, color: Colors.white),
                           ],
                         ),
                       ),
@@ -214,8 +279,99 @@ class _TimerScreenState extends State<TimerScreen>
   }
 }
 
-// ─── Set Plan Bottom Sheet ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+// Tick-Fade Clock
+// ══════════════════════════════════════════════════════
+class _TickFadeClock extends StatelessWidget {
+  final int minutes;
+  final String plan;
 
+  const _TickFadeClock({required this.minutes, required this.plan});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      height: 260,
+      child: CustomPaint(
+        painter: _TickFadeClockPainter(minutes: minutes),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${minutes.toString().padLeft(2, '0')}:00',
+                style: const TextStyle(
+                  fontSize: 44,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mins Remaining\nfor $plan',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black.withOpacity(0.35),
+                  height: 1.6,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TickFadeClockPainter extends CustomPainter {
+  final int minutes;
+
+  const _TickFadeClockPainter({required this.minutes});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = min(cx, cy) - 4;
+
+    for (int i = 0; i < 60; i++) {
+      final angle = (i / 60) * 2 * pi - pi / 2;
+      final isMajor = i % 5 == 0;
+      final tickLen = isMajor ? 12.0 : 7.0;
+      final strokeW = isMajor ? 2.0 : 1.2;
+
+      // เต็มวงเสมอ — จากเข้มไปจาง
+      final opacity = (1.0 - (i / 60) * 0.82).clamp(0.08, 1.0);
+
+      final p1 = Offset(
+          cx + (r - tickLen) * cos(angle),
+          cy + (r - tickLen) * sin(angle));
+      final p2 =
+          Offset(cx + r * cos(angle), cy + r * sin(angle));
+
+      canvas.drawLine(
+        p1,
+        p2,
+        Paint()
+          ..color = Colors.black.withOpacity(opacity)
+          ..strokeWidth = strokeW
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TickFadeClockPainter old) =>
+      old.minutes != minutes;
+}
+
+// ══════════════════════════════════════════════════════
+// Set Plan Bottom Sheet
+// ══════════════════════════════════════════════════════
 class _SetPlanSheet extends StatefulWidget {
   final String initialPlan;
   final String initialMode;
@@ -232,56 +388,115 @@ class _SetPlanSheet extends StatefulWidget {
 }
 
 class _SetPlanSheetState extends State<_SetPlanSheet> {
-  late TextEditingController _planCtrl;
+  late String _selectedPlan;
   late String _mode;
   late int _minutes;
+  bool _isCustomMinutes = false;
+  final TextEditingController _customMinCtrl = TextEditingController();
+  List<String> _tasks = [];
+  bool _loadingTasks = true;
 
   final List<String> _modes = ['Normal', 'Focus', 'Strict'];
+
+  // ✅ สีแต่ละ mode
+  static Color _modeColor(String mode) {
+    switch (mode) {
+      case 'Focus':
+        return const Color.fromARGB(255, 144, 191, 220);
+      case 'Strict':
+        return const Color.fromARGB(255, 226, 138, 135);
+      default:
+        return const Color.fromARGB(255, 151, 152, 151);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _planCtrl = TextEditingController(text: widget.initialPlan);
+    _selectedPlan = widget.initialPlan;
     _mode = widget.initialMode;
     _minutes = widget.initialMinutes;
+    if (![15, 30, 45, 60].contains(_minutes)) {
+      _isCustomMinutes = true;
+      _customMinCtrl.text = _minutes.toString();
+    }
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) {
+        if (mounted) setState(() => _loadingTasks = false);
+        return;
+      }
+      final snap = await FirebaseFirestore.instance
+          .collection('tasks')
+          .where('userId', isEqualTo: uid)
+          .where('isCompleted', isEqualTo: false)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _tasks = snap.docs
+              .map((d) => (d.data()['title'] as String?) ?? '')
+              .where((t) => t.isNotEmpty)
+              .toList();
+          _loadingTasks = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingTasks = false);
+    }
   }
 
   @override
   void dispose() {
-    _planCtrl.dispose();
+    _customMinCtrl.dispose();
     super.dispose();
+  }
+
+  int get _effectiveMinutes {
+    if (_isCustomMinutes) {
+      return (int.tryParse(_customMinCtrl.text) ?? _minutes).clamp(1, 600);
+    }
+    return _minutes;
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).viewInsets.bottom;
+    final currentModeColor = _modeColor(_mode);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomPad),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FAF0),
+        color: const Color(0xFFEFFFDF),
         borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Back arrow + title
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.arrow_back, size: 20),
-              ),
-            ],
+          // Back
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const Icon(Icons.arrow_back,
+                size: 20, color: Colors.black87),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Plan input
+          // ── Plan dropdown ──
           const Text('Plan',
-              style:
-                  TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
@@ -289,51 +504,93 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade200),
             ),
-            child: TextField(
-              controller: _planCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Write a plan',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                suffixIcon:
-                    Icon(Icons.unfold_more, color: Colors.grey, size: 18),
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _loadingTasks
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF7B5EA7),
+                        ),
+                      ),
+                    ),
+                  )
+                : _tasks.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Text(
+                          'No pending tasks',
+                          style: TextStyle(
+                              color: Colors.grey, fontSize: 13),
+                        ),
+                      )
+                    : DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _tasks.contains(_selectedPlan)
+                              ? _selectedPlan
+                              : null,
+                          hint: const Text('Select a task',
+                              style: TextStyle(
+                                  color: Colors.grey, fontSize: 14)),
+                          isExpanded: true,
+                          icon: const Icon(Icons.unfold_more,
+                              color: Colors.grey, size: 18),
+                          dropdownColor: const Color(0xFFEFFFDF),
+                          borderRadius: BorderRadius.circular(16),
+                          items: [
+                            const DropdownMenuItem(
+                              value: '',
+                              child: Text('No specific task',
+                                  style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14)),
+                            ),
+                            ..._tasks.map((t) => DropdownMenuItem(
+                                  value: t,
+                                  child: Text(t,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black87)),
+                                )),
+                          ],
+                          onChanged: (v) => setState(
+                              () => _selectedPlan = v ?? ''),
+                        ),
+                      ),
           ),
 
           const SizedBox(height: 20),
 
-          // Mode selector
+          // ── Mode selector ──
           const Text('Mode',
-              style:
-                  TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 10),
           Row(
             children: _modes.map((m) {
               final isSelected = _mode == m;
+              final modeColor = _modeColor(m); // ✅ สีของตัวเอง
               return Padding(
                 padding: const EdgeInsets.only(right: 10),
                 child: GestureDetector(
                   onTap: () => setState(() => _mode = m),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.white
-                          : Colors.transparent,
+                          ? modeColor
+                          : Colors.white.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.grey.shade300
-                            : Colors.transparent,
-                      ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.06),
+                                color: modeColor.withOpacity(0.25),
                                 blurRadius: 8,
                               )
                             ]
@@ -348,13 +605,19 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
                                   ? Icons.center_focus_strong
                                   : Icons.lock_outline,
                           size: 22,
-                          color: Colors.black87,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.black38,
                         ),
                         const SizedBox(height: 4),
                         Text(m,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.black38,
+                            )),
                       ],
                     ),
                   ),
@@ -365,87 +628,169 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
 
           const SizedBox(height: 20),
 
-          // Duration chips
+          // ── Duration ──
+          const Text('Duration',
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
-            children: [15, 25, 30, 45, 60].map((min) {
-              final isSelected = _minutes == min;
-              return GestureDetector(
-                onTap: () => setState(() => _minutes = min),
-                child: Container(
+            runSpacing: 8,
+            children: [
+              ...[15, 30, 45, 60].map((min) {
+                final isSelected =
+                    !_isCustomMinutes && _minutes == min;
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    _minutes = min;
+                    _isCustomMinutes = false;
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? currentModeColor
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border:
+                          Border.all(color: Colors.grey.shade200),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: currentModeColor
+                                    .withOpacity(0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Text(
+                      '$min min',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              // Custom chip
+              GestureDetector(
+                onTap: () =>
+                    setState(() => _isCustomMinutes = true),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF7B5EA7)
+                    color: _isCustomMinutes
+                        ? currentModeColor
                         : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: _isCustomMinutes
+                        ? [
+                            BoxShadow(
+                              color: currentModeColor
+                                  .withOpacity(0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            )
+                          ]
+                        : [],
                   ),
                   child: Text(
-                    '$min min',
+                    'Custom',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color:
-                          isSelected ? Colors.white : Colors.black87,
+                      color: _isCustomMinutes
+                          ? Colors.white
+                          : Colors.black87,
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 20),
-
-          // Clock preview
-          Center(
-            child: Container(
-              width: double.infinity,
-              height: 160,
+          if (_isCustomMinutes) ...[
+            const SizedBox(height: 12),
+            Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: currentModeColor.withOpacity(0.4)),
               ),
-              child: Center(
-                child: CustomPaint(
-                  size: const Size(130, 130),
-                  painter: _AnalogClockPainter(
-                    minutes: _minutes,
-                    progress: 0,
-                    showPhone: true,
-                  ),
+              child: TextField(
+                controller: _customMinCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  hintText: 'Enter minutes (e.g. 90, 120)',
+                  hintStyle:
+                      TextStyle(color: Colors.grey, fontSize: 13),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  suffixText: 'min',
+                  suffixStyle: TextStyle(color: Colors.grey),
                 ),
+                onChanged: (_) => setState(() {}),
               ),
             ),
-          ),
+          ],
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
-          // Start button
+          // ✅ Confirm button — gradient สีตาม mode
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context, {
-                  'plan': _planCtrl.text.trim(),
-                  'mode': _mode,
-                  'minutes': _minutes,
-                });
-              },
-              icon: const Icon(Icons.play_arrow_rounded,
-                  color: Colors.white),
-              label: const Text('Start',
-                  style: TextStyle(color: Colors.white, fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(0.6),
-                foregroundColor: Colors.black87,
-                elevation: 0,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context, {
+                'plan': _selectedPlan,
+                'mode': _mode,
+                'minutes': _effectiveMinutes,
+              }),
+              child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      currentModeColor.withOpacity(0.8),
+                      currentModeColor,
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
                   borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: currentModeColor.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Text('Confirm', // ✅ เปลี่ยนจาก Start
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )),
+                    SizedBox(width: 6),
+                    Icon(Icons.check_rounded, // ✅ icon check
+                        size: 20, color: Colors.white),
+                  ],
                 ),
               ),
             ),
@@ -454,92 +799,4 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
       ),
     );
   }
-}
-
-// ─── Analog Clock Painter ─────────────────────────────────────────────────────
-
-class _AnalogClockPainter extends CustomPainter {
-  final int minutes;
-  final double progress;
-  final bool showPhone;
-
-  const _AnalogClockPainter({
-    required this.minutes,
-    required this.progress,
-    this.showPhone = false,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final r = min(cx, cy) - 4;
-
-    // วงนาฬิกา
-    final circlePaint = Paint()
-      ..color = Colors.black87
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    canvas.drawCircle(Offset(cx, cy), r, circlePaint);
-
-    // tick marks (12 อัน)
-    final tickPaint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 2;
-    for (int i = 0; i < 12; i++) {
-      final angle = (i / 12) * 2 * pi - pi / 2;
-      final outer = Offset(cx + r * cos(angle), cy + r * sin(angle));
-      final inner =
-          Offset(cx + (r - 8) * cos(angle), cy + (r - 8) * sin(angle));
-      canvas.drawLine(inner, outer, tickPaint);
-    }
-
-    // เข็มนาทีแสดงตาม minutes ที่เลือก
-    final minAngle = (minutes / 60) * 2 * pi - pi / 2;
-    final minPaint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(cx, cy),
-      Offset(cx + (r * 0.75) * cos(minAngle), cy + (r * 0.75) * sin(minAngle)),
-      minPaint,
-    );
-
-    // เข็มชั่วโมง (ชี้ 12)
-    final hrPaint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(cx, cy),
-      Offset(cx, cy - r * 0.5),
-      hrPaint,
-    );
-
-    // จุดกลาง
-    canvas.drawCircle(
-        Offset(cx, cy),
-        4,
-        Paint()..color = Colors.black87);
-
-    // ข้อความเวลา
-    final timeTp = TextPainter(
-      text: TextSpan(
-        text: '${minutes.toString().padLeft(2, '0')}:00',
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    timeTp.paint(
-        canvas, Offset(cx - timeTp.width / 2, cy + r * 0.3));
-  }
-
-  @override
-  bool shouldRepaint(covariant _AnalogClockPainter old) =>
-      old.minutes != minutes || old.progress != progress;
 }
