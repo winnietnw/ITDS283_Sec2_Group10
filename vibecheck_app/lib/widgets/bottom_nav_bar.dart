@@ -9,6 +9,10 @@ import '../screens/settings_screen.dart';
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
+  // ✅ เพิ่ม static key เพื่อ access state จากที่อื่นได้
+  static final GlobalKey<_MainNavigationState> navKey = 
+      GlobalKey<_MainNavigationState>();
+
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
@@ -16,6 +20,12 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
+  void switchTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+  
   // ✅ สีพื้นหลังของแต่ละ tab
   static const List<Color> _bgColors = [
     Color(0xFFF7EDEF), // Home — ชมพูอ่อน

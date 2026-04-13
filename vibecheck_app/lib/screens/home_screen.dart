@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
+import '../widgets/bottom_nav_bar.dart';
 
 class EmotionData {
   final String type;
@@ -347,10 +348,7 @@ class _HomeScreenState extends State<HomeScreen>
                               children: [
                                 GestureDetector(
                                   onTap: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/analytics_emotion',
-                                    );
+                                    MainNavigation.navKey.currentState?.switchTab(3);
                                   },
                                   child: Row(
                                     children: [

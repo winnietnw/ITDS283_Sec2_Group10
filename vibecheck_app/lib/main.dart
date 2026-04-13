@@ -76,7 +76,7 @@ class VibeCheckApp extends StatelessWidget {
         routes: {
           '/login': (context) => const LoginScreen(),
           '/signup': (context) => const SignupScreen(),
-          '/home': (context) => const MainNavigation(),
+          '/home': (context) => MainNavigation(key: MainNavigation.navKey),
           '/task': (context) => const TaskScreen(),
           '/timer': (context) => const TimerScreen(),
           '/emotion': (context) => const EmotionScreen(),
