@@ -1,7 +1,8 @@
-// lib/screens/timer_running_screen.dart
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class TimerRunningScreen extends StatefulWidget {
   final int totalSeconds;
@@ -25,38 +26,52 @@ class _TimerRunningScreenState extends State<TimerRunningScreen>
   bool _isRunning = true;
   Timer? _timer;
 
-  // Animation controller สำหรับ planet floating
-  late AnimationController _animController;
-  late Animation<double> _floatAnimation;
+  late AnimationController _floatController;
+  late Animation<double> _floatAnim;
 
   @override
   void initState() {
     super.initState();
     _secondsLeft = widget.totalSeconds;
 
-    // Planet floating animation
-    _animController = AnimationController(
+    _floatController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
 
-    _floatAnimation = Tween<double>(begin: -10, end: 10).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    _floatAnim = Tween<double>(begin: -8, end: 8).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
 
-    // เริ่ม countdown ทันที
     _startTimer();
   }
 
   void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (_secondsLeft <= 0) {
         t.cancel();
-        setState(() => _isRunning = false);
-        _showFinishDialog();
+        await _saveSession(); // ✅ บันทึก session ก่อน
+        if (mounted) {
+          setState(() => _isRunning = false);
+          _showFinishDialog();
+        }
       } else {
         setState(() => _secondsLeft--);
       }
+    });
+  }
+
+  // ✅ บันทึก session ลง Firestore
+  Future<void> _saveSession() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await FirebaseFirestore.instance.collection('timer_sessions').add({
+      'userId': uid,
+      'plan': widget.focusLabel,
+      'mode': widget.mode,
+      'minutes': widget.totalSeconds ~/ 60,
+      'completedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -70,22 +85,52 @@ class _TimerRunningScreenState extends State<TimerRunningScreen>
     }
   }
 
+  void _confirmStop() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Stop Timer?'),
+        content: const Text('Are you sure you want to stop this session?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Stop', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showFinishDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.star, size: 64, color: Colors.amber),
+            const Icon(Icons.star_rounded, size: 72, color: Colors.amber),
             const SizedBox(height: 16),
             Text(
-              'You spent ${widget.totalSeconds ~/ 60}:00 min!\nFocus now, shine like a star later.',
+              'Great job! 🎉\nYou focused for ${widget.totalSeconds ~/ 60} minutes!',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Focus now, shine like a star later.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
           ],
         ),
@@ -95,10 +140,12 @@ class _TimerRunningScreenState extends State<TimerRunningScreen>
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                Navigator.pop(context); // กลับหน้า timer setup
+                Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF7B5EA7),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('Continue',
                   style: TextStyle(color: Colors.white)),
@@ -115,214 +162,211 @@ class _TimerRunningScreenState extends State<TimerRunningScreen>
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  // Progress 0.0 → 1.0 (สำหรับ circle progress)
   double get _progress => _secondsLeft / widget.totalSeconds;
 
   @override
   void dispose() {
     _timer?.cancel();
-    _animController.dispose();
+    _floatController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5E9),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // กด back → ถาม confirm ก่อน
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Stop Timer?'),
-                content:
-                    const Text('Are you sure you want to stop this session?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Cancel'),
+      backgroundColor: const Color(0xFFEFFFDF),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: _confirmStop,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_back,
+                          size: 18, color: Colors.black87),
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red),
-                    child: const Text('Stop',
-                        style: TextStyle(color: Colors.white)),
+                  const Spacer(),
+                  Text(
+                    widget.focusLabel,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7B5EA7).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      widget.mode,
+                      style: const TextStyle(
+                        color: Color(0xFF7B5EA7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            );
-          },
-        ),
-        title: Text(widget.focusLabel,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF7B5EA7).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(widget.mode,
-                style: const TextStyle(
-                    color: Color(0xFF7B5EA7), fontSize: 12)),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const Spacer(),
 
-          // Floating planet animation
-          AnimatedBuilder(
-            animation: _floatAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _floatAnimation.value),
+            const Spacer(),
+
+            // Floating planet
+            AnimatedBuilder(
+              animation: _floatAnim,
+              builder: (_, child) => Transform.translate(
+                offset: Offset(0, _floatAnim.value),
                 child: child,
-              );
-            },
-            child: CustomPaint(
-              size: const Size(80, 80),
-              painter: _PlanetPainter(),
+              ),
+              child: CustomPaint(
+                size: const Size(80, 80),
+                painter: _PlanetPainter(),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 32),
+            const SizedBox(height: 40),
 
-          // Circular progress + countdown
-          SizedBox(
-            width: 220,
-            height: 220,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Background circle
-                SizedBox(
-                  width: 220,
-                  height: 220,
-                  child: CircularProgressIndicator(
-                    value: _progress,
-                    strokeWidth: 8,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation(
-                        Color(0xFF7B5EA7)),
+            // Circular progress + time
+            SizedBox(
+              width: 220,
+              height: 220,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: CircularProgressIndicator(
+                      value: _progress,
+                      strokeWidth: 8,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: const AlwaysStoppedAnimation(
+                          Color(0xFF7B5EA7)),
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatTime(_secondsLeft),
+                        style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Text(
+                          _isRunning ? 'Focusing...' : 'Paused',
+                          key: ValueKey(_isRunning),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: _isRunning ? Colors.green : Colors.orange,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Stars
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                3,
+                (i) => const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child:
+                      Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                ),
+              ),
+            ),
+
+            const Spacer(),
+
+            // Pause/Resume button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _pauseResume,
+                  icon: Icon(
+                    _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    _isRunning ? 'Pause' : 'Resume',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        _isRunning ? Colors.orange : const Color(0xFF7B5EA7),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                 ),
-                // Time text
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _formatTime(_secondsLeft),
-                      style: const TextStyle(
-                          fontSize: 44, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      _isRunning ? 'Focusing...' : 'Paused',
-                      style: TextStyle(
-                          color: _isRunning
-                              ? Colors.green
-                              : Colors.orange,
-                          fontSize: 13),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Stars indicator (จาก Figma มีดาวเล็กๆ)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              3,
-              (i) => const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Icon(Icons.star, color: Colors.amber, size: 16),
               ),
             ),
-          ),
-
-          const Spacer(),
-
-          // Pause / Resume button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _pauseResume,
-                icon: Icon(
-                  _isRunning ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  _isRunning ? 'Pause' : 'Resume',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isRunning
-                      ? Colors.orange
-                      : const Color(0xFF7B5EA7),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-// Planet painter — วาด planet แบบง่ายๆ
 class _PlanetPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint();
+    final cx = size.width / 2;
+    final cy = size.height / 2;
 
-    // ตัว planet
-    paint.color = const Color(0xFF7B5EA7);
     canvas.drawCircle(
-        Offset(size.width / 2, size.height / 2), 30, paint);
-
-    // วง ring
-    paint
-      ..color = const Color(0xFFB39DDB).withOpacity(0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5;
-    canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(size.width / 2, size.height / 2),
-          width: size.width,
-          height: 20),
-      paint,
+      Offset(cx, cy),
+      28,
+      Paint()..color = const Color(0xFF7B5EA7),
     );
 
-    // จุดสว่างบน planet
-    paint
-      ..color = Colors.white.withOpacity(0.4)
-      ..style = PaintingStyle.fill;
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(cx, cy), width: size.width, height: 18),
+      Paint()
+        ..color = const Color(0xFFB39DDB).withOpacity(0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5,
+    );
+
     canvas.drawCircle(
-        Offset(size.width / 2 - 8, size.height / 2 - 8), 8, paint);
+      Offset(cx - 8, cy - 8),
+      8,
+      Paint()..color = Colors.white.withOpacity(0.35),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
