@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'analytics_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -219,9 +220,11 @@ class ProfileScreen extends StatelessWidget {
 
                         // Insights
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(
+                          onTap: () => Navigator.push(
                             context,
-                            '/analytics_emotion',
+                            MaterialPageRoute(
+                              builder: (_) => const AnalyticsScreen(),
+                            ),
                           ),
                           child: const Column(
                             children: [
