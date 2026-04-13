@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../widgets/header.dart';
 
 class RemindersSoundsScreen extends StatefulWidget {
   const RemindersSoundsScreen({super.key});
@@ -132,21 +131,9 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
-              pinned: true,
-              elevation: 0,
-              backgroundColor: const Color(0xFFE8E8F8),
-              surfaceTintColor: Colors.transparent,
-              automaticallyImplyLeading: false,
-              toolbarHeight: 112,
-              flexibleSpace: const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: AppHeader(),
-              ),
-            ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                padding: const EdgeInsets.fromLTRB(18, 28, 18, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -33,6 +33,7 @@ class SettingsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFE8E8F8),
       body: SafeArea(
         child: CustomScrollView(
+          physics: const NeverScrollableScrollPhysics(),
           slivers: [
             SliverAppBar(
               pinned: true,

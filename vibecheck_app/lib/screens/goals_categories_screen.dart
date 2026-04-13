@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../widgets/header.dart';
 import '../widgets/animated_action_button.dart';
 import '../data/goal_templates.dart';
 import 'goal_progress_screen.dart';
@@ -209,21 +208,9 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
-              pinned: true,
-              elevation: 0,
-              backgroundColor: const Color(0xFFE8E8F8),
-              surfaceTintColor: Colors.transparent,
-              automaticallyImplyLeading: false,
-              toolbarHeight: 112,
-              flexibleSpace: const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: AppHeader(),
-              ),
-            ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+                padding: const EdgeInsets.fromLTRB(18, 28, 18, 100),
                 child: Column(
                   children: [
                     Row(

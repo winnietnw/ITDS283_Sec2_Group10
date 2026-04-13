@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import '../widgets/header.dart';
 import '../widgets/emotion_galaxy.dart';
 
 class AboutUsScreen extends StatelessWidget {
@@ -15,12 +14,9 @@ class AboutUsScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 10),
-            const AppHeader(),
-            const SizedBox(height: 10),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
                 child: Column(
                   children: [
                     Row(

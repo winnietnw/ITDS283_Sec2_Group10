@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-import '../widgets/header.dart';
 
 class MultiDeviceSupportScreen extends StatefulWidget {
   const MultiDeviceSupportScreen({super.key});
@@ -95,12 +94,9 @@ class _MultiDeviceSupportScreenState extends State<MultiDeviceSupportScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 10),
-            const AppHeader(),
-            const SizedBox(height: 10),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
