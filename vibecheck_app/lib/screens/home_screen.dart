@@ -191,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen>
     final weekRange = _currentWeekRange();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7EDEF),
+      backgroundColor: const Color(0xFFFFEFF3),
       body: SafeArea(
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance

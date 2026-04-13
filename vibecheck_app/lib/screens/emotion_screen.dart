@@ -93,7 +93,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8EEF9),
+      backgroundColor: const Color(0xFFF2F6FD),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

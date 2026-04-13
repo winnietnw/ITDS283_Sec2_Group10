@@ -219,7 +219,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
     final range = _weekRange(_weekOffset);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8EEF9),
+      backgroundColor: const Color(0xFFF2F6FD),
       body: SafeArea(
         child: StreamBuilder<QuerySnapshot>(
           key: ValueKey(_weekOffset), // ✅ rebuild stream เมื่อ offset เปลี่ยน
