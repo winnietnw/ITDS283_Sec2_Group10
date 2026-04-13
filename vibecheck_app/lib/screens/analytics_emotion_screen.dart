@@ -510,8 +510,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
