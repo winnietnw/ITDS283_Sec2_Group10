@@ -281,7 +281,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                 SliverAppBar(
                   pinned: true,
                   elevation: 0,
-                  backgroundColor: const Color(0xFFE8EEF9),
+                  backgroundColor: Colors.transparent,
                   surfaceTintColor: Colors.transparent,
                   automaticallyImplyLeading: false,
                   toolbarHeight: 112,

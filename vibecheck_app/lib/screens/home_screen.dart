@@ -276,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen>
                       floating: false,
                       snap: false,
                       elevation: 0,
-                      backgroundColor: const Color(0xFFF7EDEF),
+                      backgroundColor: Colors.transparent,
                       surfaceTintColor: Colors.transparent,
                       automaticallyImplyLeading: false,
                       toolbarHeight: 112,

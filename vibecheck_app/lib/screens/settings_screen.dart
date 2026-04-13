@@ -37,7 +37,7 @@ class SettingsScreen extends StatelessWidget {
             SliverAppBar(
               pinned: true,
               elevation: 0,
-              backgroundColor: const Color(0xFFE8E8F8),
+              backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               automaticallyImplyLeading: false,
               toolbarHeight: 112,

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/task_screen.dart';
@@ -7,13 +8,23 @@ import '../screens/settings_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
-  
+
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+
+  // ✅ สีพื้นหลังของแต่ละ tab
+  static const List<Color> _bgColors = [
+    Color(0xFFF7EDEF), // Home — ชมพูอ่อน
+    Color(0xFFF9F5F9), // Tasks — ขาวม่วงอ่อน
+    Color(0xFFE8F5E9), // Timer — เขียวอ่อน
+    Color(0xFFE8EEF9), // Emotion — ฟ้าอ่อน
+    Color(0xFFE8E8F8), // Settings — ม่วงอ่อน
+  ];
+
   final List<Widget> _screens = [
     const HomeScreen(),
     const TaskScreen(),
@@ -24,22 +35,125 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    final items = [
+      _NavItem(icon: Icons.home_outlined,           activeIcon: Icons.home_rounded,           label: 'Home'),
+      _NavItem(icon: Icons.check_box_outlined,      activeIcon: Icons.check_box_rounded,      label: 'Tasks'),
+      _NavItem(icon: Icons.timer_outlined,          activeIcon: Icons.timer_rounded,          label: 'Time'),
+      _NavItem(icon: Icons.emoji_emotions_outlined, activeIcon: Icons.emoji_emotions_rounded, label: 'Emotion'),
+      _NavItem(icon: Icons.settings_outlined,       activeIcon: Icons.settings_rounded,       label: 'Settings'),
+    ];
+
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF7B5EA7),
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt_outlined), activeIcon: Icon(Icons.list_alt), label: 'Tasks'),
-          BottomNavigationBarItem(icon: Icon(Icons.timer_outlined), activeIcon: Icon(Icons.timer), label: 'Time'),
-          BottomNavigationBarItem(icon: Icon(Icons.emoji_emotions_outlined), activeIcon: Icon(Icons.emoji_emotions), label: 'Emotion'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: 'Settings'),
+      extendBody: true,
+      backgroundColor: _bgColors[_currentIndex], // ✅ เปลี่ยนสีตาม tab
+      body: Stack(
+        children: [
+          // ✅ Screen content
+          IndexedStack(index: _currentIndex, children: _screens),
+
+          // ✅ Floating nav bar
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: bottomPadding + 12,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  height: 72,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.80),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.6),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7B5EA7).withOpacity(0.12),
+                        blurRadius: 30,
+                        offset: const Offset(0, 8),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(items.length, (index) {
+                      final item = items[index];
+                      final isActive = _currentIndex == index;
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _currentIndex = index),
+                        behavior: HitTestBehavior.opaque,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? const Color(0xFF7B5EA7).withOpacity(0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  isActive ? item.activeIcon : item.icon,
+                                  key: ValueKey(isActive),
+                                  size: 22,
+                                  color: isActive
+                                      ? const Color(0xFF7B5EA7)
+                                      : Colors.grey.shade400,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                item.label,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                                  color: isActive
+                                      ? const Color(0xFF7B5EA7)
+                                      : Colors.grey.shade400,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }
