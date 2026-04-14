@@ -26,47 +26,114 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────
+  //  Dialog: Add
+  // ─────────────────────────────────────────────
   Future<void> _showAddDialog() async {
     _controller.clear();
     await showDialog(
       context: context,
+      barrierColor: Colors.black.withOpacity(0.35),
       builder: (_) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Text(
-            selectedTab == 0 ? 'New Classification' : 'New Target',
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          content: TextField(
-            controller: _controller,
-            maxLength: 15,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'Please enter content',
-              counterText: '',
-              filled: true,
-              fillColor: const Color(0xFFF5F5F5),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+        return Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selectedTab == 0 ? 'New Classification' : 'New Target',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E1E2E),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _controller,
+                  maxLength: 15,
+                  autofocus: true,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1E1E2E),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter name...',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFFCCCCCC),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    counterText: '',
+                    filled: true,
+                    fillColor: const Color(0xFFF6F6F6),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 13),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD0AAFF),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: const Color(0xFFF0F0F0),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF888888),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: _submitNewItem,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: const Color(0xFF1E1E2E),
+                        ),
+                        child: const Text(
+                          'Add',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF232531),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: _submitNewItem,
-              child: const Text('Add', style: TextStyle(color: Colors.white)),
-            ),
-          ],
         );
       },
     );
@@ -98,49 +165,116 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  // ─────────────────────────────────────────────
+  //  Dialog: Edit
+  // ─────────────────────────────────────────────
   Future<void> _editClassification(String docId, String oldValue) async {
     final controller = TextEditingController(text: oldValue);
     await showDialog(
       context: context,
+      barrierColor: Colors.black.withOpacity(0.35),
       builder: (_) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w700)),
-          content: TextField(
-            controller: controller,
-            maxLength: 15,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'Enter new name',
-              counterText: '',
-              filled: true,
-              fillColor: const Color(0xFFF5F5F5),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+        return Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Edit',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E1E2E),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  maxLength: 15,
+                  autofocus: true,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1E1E2E),
+                  ),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    filled: true,
+                    fillColor: const Color(0xFFF6F6F6),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 13),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD0AAFF),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: const Color(0xFFF0F0F0),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF888888),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () async {
+                          final text = controller.text.trim();
+                          if (text.isEmpty) return;
+                          await _classificationCollection
+                              .doc(docId)
+                              .update({'title': text});
+                          if (mounted) Navigator.pop(context);
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: const Color(0xFF1E1E2E),
+                        ),
+                        child: const Text(
+                          'Save',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF232531),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () async {
-                final text = controller.text.trim();
-                if (text.isEmpty) return;
-                await _classificationCollection.doc(docId).update({'title': text});
-                if (mounted) Navigator.pop(context);
-              },
-              child: const Text('Save', style: TextStyle(color: Colors.white)),
-            ),
-          ],
         );
       },
     );
@@ -156,7 +290,8 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     int newIndex,
   ) async {
     if (newIndex > oldIndex) newIndex--;
-    final reordered = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(docs);
+    final reordered =
+        List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(docs);
     final moved = reordered.removeAt(oldIndex);
     reordered.insert(newIndex, moved);
 
@@ -182,7 +317,6 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ✅ Fixed top bar — ไม่เลื่อน
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 26, 16, 4),
               child: Row(
@@ -197,7 +331,8 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                     },
                     child: const SizedBox(
                       width: 40,
-                      child: Icon(Icons.arrow_back, size: 24, color: Colors.black87),
+                      child: Icon(Icons.arrow_back,
+                          size: 24, color: Colors.black87),
                     ),
                   ),
                   Expanded(
@@ -222,8 +357,6 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                 ],
               ),
             ),
-
-            // ✅ content scroll ได้
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 15, 18, 100),
@@ -231,7 +364,9 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                   children: [
                     if (selectedTab == 0)
                       StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: _classificationCollection.orderBy('order').snapshots(),
+                        stream: _classificationCollection
+                            .orderBy('order')
+                            .snapshots(),
                         builder: (context, snapshot) {
                           final docs = snapshot.data?.docs ?? [];
 
@@ -240,7 +375,8 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                               padding: EdgeInsets.only(top: 180),
                               child: Text(
                                 'No classification has been created yet',
-                                style: TextStyle(fontSize: 14, color: Colors.black54),
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.black54),
                               ),
                             );
                           }
@@ -272,11 +408,13 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                 itemCount: docs.length,
                                 buildDefaultDragHandles: false,
                                 onReorder: (oldIndex, newIndex) {
-                                  _reorderClassification(docs, oldIndex, newIndex);
+                                  _reorderClassification(
+                                      docs, oldIndex, newIndex);
                                 },
                                 itemBuilder: (context, index) {
                                   final doc = docs[index];
-                                  final title = doc.data()['title']?.toString() ?? '';
+                                  final title =
+                                      doc.data()['title']?.toString() ?? '';
 
                                   return Container(
                                     key: ValueKey(doc.id),
@@ -298,23 +436,63 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         PopupMenuButton<String>(
+                                          icon: const Icon(Icons.more_vert,
+                                              color: Color(0xFF888888),
+                                              size: 20),
                                           shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12)),
+                                              borderRadius:
+                                                  BorderRadius.circular(16)),
+                                          color: Colors.white,
+                                          elevation: 8,
+                                          shadowColor:
+                                              Colors.black.withOpacity(0.12),
+                                          padding: EdgeInsets.zero,
                                           onSelected: (value) {
                                             if (value == 'edit') {
-                                              _editClassification(doc.id, title);
+                                              _editClassification(
+                                                  doc.id, title);
                                             } else if (value == 'delete') {
                                               _deleteClassification(doc.id);
                                             }
                                           },
-                                          itemBuilder: (context) => const [
+                                          itemBuilder: (context) => [
                                             PopupMenuItem<String>(
-                                                value: 'edit', child: Text('Edit')),
+                                              value: 'edit',
+                                              child: Row(
+                                                children: const [
+                                                  Icon(Icons.edit_outlined,
+                                                      size: 16,
+                                                      color: Color(0xFF555555)),
+                                                  SizedBox(width: 10),
+                                                  Text('Edit',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: Color(
+                                                              0xFF333333))),
+                                                ],
+                                              ),
+                                            ),
                                             PopupMenuItem<String>(
-                                                value: 'delete', child: Text('Delete')),
+                                              value: 'delete',
+                                              child: Row(
+                                                children: const [
+                                                  Icon(Icons.delete_outline,
+                                                      size: 16,
+                                                      color: Color(0xFFE57373)),
+                                                  SizedBox(width: 10),
+                                                  Text('Delete',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: Color(
+                                                              0xFFE57373))),
+                                                ],
+                                              ),
+                                            ),
                                           ],
-                                          child: const Icon(Icons.more_vert,
-                                              color: Colors.black54),
                                         ),
                                         const SizedBox(width: 8),
                                         ReorderableDragStartListener(
@@ -335,14 +513,16 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                       StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                         stream: FirebaseFirestore.instance
                             .collection('goal_progress')
-                            .doc('current_active_${FirebaseAuth.instance.currentUser?.uid ?? 'unknown'}')
+                            .doc(
+                                'current_active_${FirebaseAuth.instance.currentUser?.uid ?? 'unknown'}')
                             .snapshots(),
                         builder: (context, snapshot) {
                           final data = snapshot.data?.data();
 
                           if (data == null) {
                             return SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.58,
+                              height:
+                                  MediaQuery.of(context).size.height * 0.58,
                               child: const Center(
                                 child: Text('No ongoing goals',
                                     style: TextStyle(
@@ -355,7 +535,8 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
 
                           final goalId = data['goalId']?.toString() ?? '';
                           final title = data['title']?.toString() ?? 'Goal';
-                          final colorValue = data['colorValue'] as int? ?? 0xFFE9D9A8;
+                          final colorValue =
+                              data['colorValue'] as int? ?? 0xFFE9D9A8;
                           final selectedDay = data['selectedDay'] as int? ?? 1;
                           final totalDays = data['totalDays'] as int? ?? 30;
                           final completedDays =
@@ -368,7 +549,8 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                             padding: const EdgeInsets.only(top: 16),
                             child: Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                              padding:
+                                  const EdgeInsets.fromLTRB(18, 18, 18, 18),
                               decoration: BoxDecoration(
                                 color: Color(colorValue),
                                 borderRadius: BorderRadius.circular(22),
@@ -403,7 +585,8 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                           fontWeight: FontWeight.w500,
                                           color: Colors.black54)),
                                   const SizedBox(height: 4),
-                                  Text('Completed days: ${completedDays.length}',
+                                  Text(
+                                      'Completed days: ${completedDays.length}',
                                       style: const TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500,
@@ -411,13 +594,15 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                   const SizedBox(height: 16),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white.withOpacity(0.95),
+                                      backgroundColor:
+                                          Colors.white.withOpacity(0.95),
                                       foregroundColor: Colors.black87,
                                       elevation: 0,
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12)),
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
                                     ),
                                     onPressed: activeGoal == null
                                         ? null
@@ -426,12 +611,14 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                               context,
                                               MaterialPageRoute(
                                                 builder: (_) =>
-                                                    GoalProgressScreen(goal: activeGoal),
+                                                    GoalProgressScreen(
+                                                        goal: activeGoal),
                                               ),
                                             );
                                           },
                                     child: const Text('Continue',
-                                        style: TextStyle(fontWeight: FontWeight.w600)),
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w600)),
                                   ),
                                 ],
                               ),
