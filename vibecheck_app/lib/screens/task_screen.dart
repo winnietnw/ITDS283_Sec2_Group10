@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../widgets/header.dart';
 
 class TaskScreen extends StatefulWidget {
@@ -12,14 +13,17 @@ class TaskScreen extends StatefulWidget {
 
 class _TaskScreenState extends State<TaskScreen> {
   final _user = FirebaseAuth.instance.currentUser;
-  String? _selectedFilter;
+  String? _selectedCategory;
+  String _deadlineView = 'All'; // Today / Upcoming / All
 
-  Future<void> _addTask(String title, String? category) async {
+  Future<void> _addTask(
+      String title, String? category, DateTime? deadline) async {
     if (title.trim().isEmpty) return;
     await FirebaseFirestore.instance.collection('tasks').add({
       'userId': _user?.uid,
       'title': title.trim(),
       'category': category,
+      'deadline': deadline != null ? Timestamp.fromDate(deadline) : null,
       'isCompleted': false,
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -59,6 +63,42 @@ class _TaskScreenState extends State<TaskScreen> {
       .orderBy('order')
       .snapshots();
 
+  // ── filter docs ตาม deadline view + category ──
+  List<QueryDocumentSnapshot> _filterDocs(List<QueryDocumentSnapshot> docs) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    var result = docs;
+
+    // filter deadline view
+    if (_deadlineView == 'Today') {
+      result = result.where((d) {
+        final data = d.data() as Map;
+        final dl = (data['deadline'] as Timestamp?)?.toDate();
+        if (dl == null) return false;
+        return dl.isAfter(todayStart) && dl.isBefore(todayEnd);
+      }).toList();
+    } else if (_deadlineView == 'Upcoming') {
+      result = result.where((d) {
+        final data = d.data() as Map;
+        final dl = (data['deadline'] as Timestamp?)?.toDate();
+        if (dl == null) return false;
+        return dl.isAfter(todayEnd);
+      }).toList();
+    }
+
+    // filter category
+    if (_selectedCategory != null) {
+      result = result.where((d) {
+        final cat = (d.data() as Map)['category']?.toString();
+        return cat == _selectedCategory;
+      }).toList();
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +106,7 @@ class _TaskScreenState extends State<TaskScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header fixed ──
+            // ── Header ──
             const SizedBox(
               height: 112,
               child: Padding(
@@ -75,25 +115,22 @@ class _TaskScreenState extends State<TaskScreen> {
               ),
             ),
 
-            // ── Today + badges fixed ──
+            // ── Title + TO-DO badge + deadline dropdown ──
             StreamBuilder<QuerySnapshot>(
               stream: _taskStream,
               builder: (context, snapshot) {
                 final docs = snapshot.data?.docs ?? [];
-                final todoCount = docs
+                final filtered = _filterDocs(docs);
+                final todoCount = filtered
                     .where((d) =>
                         (d.data() as Map)['isCompleted'] != true)
                     .length;
-                final completedCount = docs
-                    .where((d) =>
-                        (d.data() as Map)['isCompleted'] == true)
-                    .length;
 
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 5),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
                   child: Row(
                     children: [
-                      const Text('Today',
+                      const Text('Tasks',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
@@ -105,11 +142,43 @@ class _TaskScreenState extends State<TaskScreen> {
                         color: const Color(0xFFFFB3C6),
                         textColor: const Color(0xFF8B3A52),
                       ),
-                      const SizedBox(width: 6),
-                      _badge(
-                        label: 'Completed ($completedCount)',
-                        color: const Color(0xFFB3F0D9),
-                        textColor: const Color(0xFF1A6B48),
+                      const Spacer(),
+                      // ✅ Deadline view dropdown
+                      GestureDetector(
+                        onTap: () => _showDeadlineMenu(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _deadlineView,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 16,
+                                  color: Colors.black54),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -117,26 +186,27 @@ class _TaskScreenState extends State<TaskScreen> {
               },
             ),
 
-            // ── Category filter bar fixed ──
+            // ── Category filter bar ──
             StreamBuilder<QuerySnapshot>(
               stream: _categoryStream,
               builder: (context, snapshot) {
                 final cats = snapshot.data?.docs ?? [];
-                if (cats.isEmpty) return const SizedBox(height: 12);
+                if (cats.isEmpty) return const SizedBox(height: 8);
 
                 return SizedBox(
-                  height: 44,
+                  height: 40,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.fromLTRB(30, 8, 30, 7),
+                    padding:
+                        const EdgeInsets.fromLTRB(20, 6, 20, 4),
                     children: [
                       _filterChip(
                         label: 'All',
-                        isSelected: _selectedFilter == null,
+                        isSelected: _selectedCategory == null,
                         onTap: () =>
-                            setState(() => _selectedFilter = null),
+                            setState(() => _selectedCategory = null),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       ...cats.map((doc) {
                         final name =
                             (doc.data() as Map)['title']?.toString() ??
@@ -145,9 +215,9 @@ class _TaskScreenState extends State<TaskScreen> {
                           padding: const EdgeInsets.only(right: 8),
                           child: _filterChip(
                             label: name,
-                            isSelected: _selectedFilter == name,
+                            isSelected: _selectedCategory == name,
                             onTap: () => setState(
-                                () => _selectedFilter = name),
+                                () => _selectedCategory = name),
                           ),
                         );
                       }),
@@ -157,9 +227,9 @@ class _TaskScreenState extends State<TaskScreen> {
               },
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
-            // ── Task list scrollable ──
+            // ── Task list ──
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _taskStream,
@@ -171,15 +241,7 @@ class _TaskScreenState extends State<TaskScreen> {
                   }
 
                   final allDocs = snapshot.data?.docs ?? [];
-
-                  final filtered = _selectedFilter == null
-                      ? allDocs
-                      : allDocs.where((d) {
-                          final cat = (d.data()
-                                  as Map)['category']
-                              ?.toString();
-                          return cat == _selectedFilter;
-                        }).toList();
+                  final filtered = _filterDocs(allDocs);
 
                   final todo = filtered
                       .where((d) =>
@@ -191,11 +253,13 @@ class _TaskScreenState extends State<TaskScreen> {
                       .toList();
 
                   if (filtered.isEmpty) {
-                    return _emptyState(
-                      _selectedFilter == null
-                          ? 'No tasks yet!\nTap + to add one 😊'
-                          : 'No tasks in "$_selectedFilter" yet',
-                    );
+                    return _emptyState(_deadlineView == 'Today'
+                        ? "No tasks due today 🎉"
+                        : _deadlineView == 'Upcoming'
+                            ? "No upcoming tasks"
+                            : _selectedCategory != null
+                                ? 'No tasks in "$_selectedCategory"'
+                                : 'No tasks yet!\nTap + to add one 😊');
                   }
 
                   return ListView(
@@ -205,9 +269,13 @@ class _TaskScreenState extends State<TaskScreen> {
                       ...todo.map((doc) {
                         final data =
                             doc.data() as Map<String, dynamic>;
+                        final deadline =
+                            (data['deadline'] as Timestamp?)
+                                ?.toDate();
                         return _TaskTile(
                           title: data['title'] ?? '',
                           category: data['category']?.toString(),
+                          deadline: deadline,
                           isCompleted: false,
                           onToggle: () => _toggleTask(doc.id, false),
                           onDelete: () => _deleteTask(doc.id),
@@ -229,9 +297,13 @@ class _TaskScreenState extends State<TaskScreen> {
                         ...completed.map((doc) {
                           final data =
                               doc.data() as Map<String, dynamic>;
+                          final deadline =
+                              (data['deadline'] as Timestamp?)
+                                  ?.toDate();
                           return _TaskTile(
                             title: data['title'] ?? '',
                             category: data['category']?.toString(),
+                            deadline: deadline,
                             isCompleted: true,
                             onToggle: () =>
                                 _toggleTask(doc.id, true),
@@ -254,11 +326,42 @@ class _TaskScreenState extends State<TaskScreen> {
           onPressed: _showAddSheet,
           backgroundColor: const Color(0xFFFFB3C6),
           elevation: 4,
-          child:
-              const Icon(Icons.add, color: Colors.white, size: 28),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
     );
+  }
+
+  void _showDeadlineMenu(BuildContext context) async {
+    final options = ['All', 'Today', 'Upcoming'];
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        MediaQuery.of(context).size.width - 150,
+        180,
+        20,
+        0,
+      ),
+      color: const Color.fromARGB(255, 255, 255, 255),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14)),
+      items: options
+          .map((o) => PopupMenuItem(
+                value: o,
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(o,
+                            style: const TextStyle(fontSize: 14))),
+                    if (o == _deadlineView)
+                      const Icon(Icons.check_rounded,
+                          size: 16, color: Color(0xFFFFB3C6)),
+                  ],
+                ),
+              ))
+          .toList(),
+    );
+    if (selected != null) setState(() => _deadlineView = selected);
   }
 
   Widget _badge({
@@ -300,9 +403,8 @@ class _TaskScreenState extends State<TaskScreen> {
         padding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF555555)
-              : Colors.white,
+          color:
+              isSelected ? const Color(0xFF555555) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -317,11 +419,9 @@ class _TaskScreenState extends State<TaskScreen> {
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: isSelected
-                ? FontWeight.w600
-                : FontWeight.w400,
-            color:
-                isSelected ? Colors.white : Colors.black54,
+            fontWeight:
+                isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? Colors.white : Colors.black54,
           ),
         ),
       ),
@@ -349,6 +449,7 @@ class _TaskScreenState extends State<TaskScreen> {
 class _TaskTile extends StatelessWidget {
   final String title;
   final String? category;
+  final DateTime? deadline;
   final bool isCompleted;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
@@ -356,14 +457,40 @@ class _TaskTile extends StatelessWidget {
   const _TaskTile({
     required this.title,
     required this.category,
+    required this.deadline,
     required this.isCompleted,
     required this.onToggle,
     required this.onDelete,
   });
 
+  // สี deadline
+  Color _deadlineColor(DateTime dl) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dlDay = DateTime(dl.year, dl.month, dl.day);
+    final diff = dlDay.difference(today).inDays;
+    if (diff < 0) return const Color(0xFFE53935); // เกิน → แดง
+    if (diff == 0) return const Color(0xFFFF7043); // วันนี้ → ส้ม
+    if (diff <= 2) return const Color(0xFFFFB300); // ใกล้ → เหลือง
+    return Colors.grey.shade400; // ยังไกล → เทา
+  }
+
+  String _deadlineLabel(DateTime dl) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dlDay = DateTime(dl.year, dl.month, dl.day);
+    final diff = dlDay.difference(today).inDays;
+    if (diff < 0) return 'Overdue';
+    if (diff == 0) return 'Due Today';
+    if (diff == 1) return 'Due Tomorrow';
+    return 'Due ${DateFormat('MMM d').format(dl)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasCategory = category != null && category!.isNotEmpty;
+    final hasDeadline = deadline != null;
+    final hasSub = hasCategory || hasDeadline;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -379,8 +506,8 @@ class _TaskTile extends StatelessWidget {
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 0), // ✅ ลด vertical
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         leading: GestureDetector(
           onTap: onToggle,
           child: AnimatedContainer(
@@ -419,28 +546,60 @@ class _TaskTile extends StatelessWidget {
             decorationColor: Colors.grey.shade400,
           ),
         ),
-        // ✅ category tag ไม่ยืด
-        subtitle: hasCategory
+        subtitle: hasSub
             ? Padding(
-                padding: const EdgeInsets.only(top: 3, bottom: 4),
+                padding:
+                    const EdgeInsets.only(top: 3, bottom: 4),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F0F0),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        category!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w500,
+                    // category tag
+                    if (hasCategory) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F0F0),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          category!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
+                      if (hasDeadline) const SizedBox(width: 6),
+                    ],
+                    // deadline tag
+                    if (hasDeadline && !isCompleted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _deadlineColor(deadline!)
+                              .withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.schedule_rounded,
+                                size: 10,
+                                color: _deadlineColor(deadline!)),
+                            const SizedBox(width: 3),
+                            Text(
+                              _deadlineLabel(deadline!),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _deadlineColor(deadline!),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               )
@@ -459,7 +618,7 @@ class _TaskTile extends StatelessWidget {
 // Add Task Bottom Sheet
 // ══════════════════════════════════════════════════════
 class _AddTaskSheet extends StatefulWidget {
-  final Future<void> Function(String, String?) onAdd;
+  final Future<void> Function(String, String?, DateTime?) onAdd;
 
   const _AddTaskSheet({required this.onAdd});
 
@@ -470,7 +629,16 @@ class _AddTaskSheet extends StatefulWidget {
 class _AddTaskSheetState extends State<_AddTaskSheet> {
   final TextEditingController _ctrl = TextEditingController();
   String? _selectedCategory;
+  DateTime? _deadline;
   bool _loading = false;
+
+  // quick deadline options
+  static final _quickDeadlines = [
+    ('Today', 0),
+    ('Tomorrow', 1),
+    ('This Week', null), // คำนวณพิเศษ
+    ('Pick date', -1), // เปิด date picker
+  ];
 
   @override
   void initState() {
@@ -484,10 +652,65 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
     super.dispose();
   }
 
+  DateTime _thisWeekEnd() {
+    final now = DateTime.now();
+    final daysLeft = 7 - now.weekday;
+    final end = now.add(Duration(days: daysLeft));
+    return DateTime(end.year, end.month, end.day, 23, 59);
+  }
+
+  String _formatDeadline(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dlDay = DateTime(dt.year, dt.month, dt.day);
+    final diff = dlDay.difference(today).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    return DateFormat('MMM d').format(dt);
+  }
+
+  Future<void> _pickDeadline(String label, int? daysOffset) async {
+    if (daysOffset == -1) {
+      // date picker
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate:
+            DateTime.now().add(const Duration(days: 365)),
+        builder: (ctx, child) => Theme(
+          data: Theme.of(ctx).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFFFB3C6),
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        ),
+      );
+      if (picked != null) {
+        setState(() => _deadline =
+            DateTime(picked.year, picked.month, picked.day, 23, 59));
+      }
+      return;
+    }
+
+    if (daysOffset == null) {
+      // This Week
+      setState(() => _deadline = _thisWeekEnd());
+      return;
+    }
+
+    final now = DateTime.now();
+    final target = now.add(Duration(days: daysOffset));
+    setState(() =>
+        _deadline = DateTime(target.year, target.month, target.day, 23, 59));
+  }
+
   Future<void> _submit() async {
     if (_ctrl.text.trim().isEmpty) return;
     setState(() => _loading = true);
-    await widget.onAdd(_ctrl.text, _selectedCategory);
+    await widget.onAdd(_ctrl.text, _selectedCategory, _deadline);
     if (mounted) Navigator.pop(context);
   }
 
@@ -561,14 +784,12 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
                           size: 14,
                           color: Colors.grey.shade400),
                       const SizedBox(width: 6),
-                      Text(
-                        'Add category',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade400,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
+                      Text('Add category',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade400,
+                            decoration: TextDecoration.underline,
+                          )),
                     ],
                   ),
                 );
@@ -586,12 +807,10 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
                   child: DropdownButton<String>(
                     value: _selectedCategory,
                     isExpanded: true,
-                    hint: Text(
-                      'Select category (optional)',
-                      style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 13),
-                    ),
+                    hint: Text('Select category (optional)',
+                        style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 13)),
                     icon: Icon(Icons.keyboard_arrow_down,
                         color: Colors.grey.shade400, size: 18),
                     dropdownColor: const Color(0xFFFDFAF2),
@@ -624,6 +843,99 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
                 ),
               );
             },
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Deadline quick chips ──
+          const Text('Deadline',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black54)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              // "No deadline" chip
+              GestureDetector(
+                onTap: () => setState(() => _deadline = null),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _deadline == null
+                        ? const Color(0xFF555555)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: Colors.grey.shade200),
+                  ),
+                  child: Text('Anytime',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: _deadline == null
+                              ? Colors.white
+                              : Colors.black54)),
+                ),
+              ),
+              // quick deadline chips
+              ..._quickDeadlines.map((item) {
+                final label = item.$1;
+                final offset = item.$2;
+                bool isSelected = false;
+                if (_deadline != null) {
+                  if (label == 'Pick date') {
+                    // selected ถ้าไม่ตรงกับ Today/Tomorrow/ThisWeek
+                    final now = DateTime.now();
+                    final today = DateTime(now.year, now.month, now.day);
+                    final dl = DateTime(
+                        _deadline!.year, _deadline!.month, _deadline!.day);
+                    final diff = dl.difference(today).inDays;
+                    isSelected = diff > 1 &&
+                        _deadline != _thisWeekEnd();
+                  } else if (offset == null) {
+                    isSelected = _deadline == _thisWeekEnd();
+                  } else if (offset >= 0) {
+                    final target = DateTime.now()
+                        .add(Duration(days: offset));
+                    isSelected = _deadline!.year == target.year &&
+                        _deadline!.month == target.month &&
+                        _deadline!.day == target.day;
+                  }
+                }
+
+                return GestureDetector(
+                  onTap: () => _pickDeadline(label, offset),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFFFB3C6)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: Colors.grey.shade200),
+                    ),
+                    child: Text(
+                      label == 'Pick date' && _deadline != null && isSelected
+                          ? _formatDeadline(_deadline!)
+                          : label,
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.black54),
+                    ),
+                  ),
+                );
+              }),
+            ],
           ),
 
           const SizedBox(height: 12),
