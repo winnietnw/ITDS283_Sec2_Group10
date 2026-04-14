@@ -72,15 +72,6 @@ class _NewTargetScreenState extends State<NewTargetScreen>
       body: SafeArea(
         child: Column(
           children: [
-            /// HEADER ค้าง
-            Container(
-              color: Colors.white,
-              child: const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: AppHeader(),
-              ),
-            ),
-
             /// TOP BAR ค้าง
             Container(
               color: Colors.white,
