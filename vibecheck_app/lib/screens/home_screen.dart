@@ -5,6 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../data/goal_templates.dart';
+import '../screens/goal_progress_screen.dart';
+import '../services/goal_progress_service.dart';
 
 class EmotionData {
   final String type;
@@ -57,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-
     _orbitController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10000),
@@ -87,19 +89,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   String _dateLabel(DateTimeRange range) {
     const months = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return "${months[range.start.month]} ${range.start.day} - ${months[range.end.month]} ${range.end.day}";
   }
@@ -123,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _showAddTaskDialog() async {
     final controller = TextEditingController();
-
     await showDialog(
       context: context,
       builder: (context) {
@@ -163,27 +153,28 @@ class _HomeScreenState extends State<HomeScreen>
               onPressed: () async {
                 final text = controller.text.trim();
                 if (text.isEmpty) return;
-
                 await FirebaseFirestore.instance.collection('tasks').add({
                   'title': text,
                   'done': false,
                   'createdAt': Timestamp.now(),
                   'userId': FirebaseAuth.instance.currentUser?.uid,
                 });
-
-                if (mounted) {
-                  Navigator.pop(context);
-                }
+                if (mounted) Navigator.pop(context);
               },
-              child: const Text(
-                'Add',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Add', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
       },
     );
+  }
+
+  GoalTemplate? _findGoalById(String id) {
+    final goals = buildGoalTemplatesForCurrentMonth();
+    for (final goal in goals) {
+      if (goal.id == id) return goal;
+    }
+    return null;
   }
 
   @override
@@ -197,8 +188,8 @@ class _HomeScreenState extends State<HomeScreen>
           stream: FirebaseFirestore.instance
               .collection('emotions')
               .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-              .where('time',isGreaterThanOrEqualTo: Timestamp.fromDate(weekRange.start),)
-              .where('time',isLessThanOrEqualTo: Timestamp.fromDate(weekRange.end),)
+              .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(weekRange.start))
+              .where('time', isLessThanOrEqualTo: Timestamp.fromDate(weekRange.end))
               .snapshots(),
           builder: (context, emotionSnapshot) {
             final emotionDocs = emotionSnapshot.data?.docs ?? [];
@@ -221,28 +212,18 @@ class _HomeScreenState extends State<HomeScreen>
 
             final total = emotions.length;
 
-            int positive = 0;
-            int neutral = 0;
-            int negative = 0;
-
+            int positive = 0, neutral = 0, negative = 0;
             emotionCount.forEach((key, value) {
-              if (_positiveSet.contains(key)) {
-                positive += value;
-              } else if (_negativeSet.contains(key)) {
-                negative += value;
-              } else {
-                neutral += value;
-              }
+              if (_positiveSet.contains(key)) positive += value;
+              else if (_negativeSet.contains(key)) negative += value;
+              else neutral += value;
             });
 
-            final positivePct =
-                total == 0 ? 0 : ((positive / total) * 100).round();
-            final neutralPct =
-                total == 0 ? 0 : ((neutral / total) * 100).round();
-            final negativePct =
-                total == 0 ? 0 : ((negative / total) * 100).round();
+            final positivePct = total == 0 ? 0 : ((positive / total) * 100).round();
+            final neutralPct  = total == 0 ? 0 : ((neutral  / total) * 100).round();
+            final negativePct = total == 0 ? 0 : ((negative / total) * 100).round();
 
-            final mostType = sorted.isNotEmpty ? sorted.first.key : 'neutral';
+            final mostType  = sorted.isNotEmpty ? sorted.first.key : 'neutral';
             final mostEmoji = _emojiMap[mostType] ?? "😐";
 
             return StreamBuilder<QuerySnapshot>(
@@ -258,16 +239,15 @@ class _HomeScreenState extends State<HomeScreen>
                   final data = (doc.data() as Map<String, dynamic>? ?? {});
                   return TaskData(
                     id: doc.id,
-                    title:
-                        (data['title']?.toString().trim().isNotEmpty ?? false)
-                            ? data['title'].toString()
-                            : 'Untitled Task',
+                    title: (data['title']?.toString().trim().isNotEmpty ?? false)
+                        ? data['title'].toString()
+                        : 'Untitled Task',
                     done: data['isCompleted'] == true,
                   );
                 }).toList();
 
                 final todoTasks = tasks.where((t) => !t.done).toList();
-                final doneTasks = tasks.where((t) => t.done).toList();
+                final doneTasks = tasks.where((t) =>  t.done).toList();
 
                 return CustomScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -309,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           const SizedBox(height: 16),
 
-                          /// ORBIT
+                          // ── ORBIT ──
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 22),
                             width: double.infinity,
@@ -329,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                           const SizedBox(height: 18),
 
-                          /// GALAXY SUMMARY
+                          // ── GALAXY SUMMARY ──
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 22),
                             padding: const EdgeInsets.all(18),
@@ -351,14 +331,11 @@ class _HomeScreenState extends State<HomeScreen>
                                     MainNavigation.navKey.currentState?.switchTab(3);
                                   },
                                   child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.bar_chart_rounded,
-                                        size: 16,
-                                        color: Color(0xFFD7B8FF),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Expanded(
+                                    children: const [
+                                      Icon(Icons.bar_chart_rounded,
+                                          size: 16, color: Color(0xFFD7B8FF)),
+                                      SizedBox(width: 8),
+                                      Expanded(
                                         child: Text(
                                           "Galaxy Summary",
                                           style: TextStyle(
@@ -368,11 +345,8 @@ class _HomeScreenState extends State<HomeScreen>
                                           ),
                                         ),
                                       ),
-                                      const Icon(
-                                        Icons.chevron_right,
-                                        size: 20,
-                                        color: Color(0xFF273142),
-                                      ),
+                                      Icon(Icons.chevron_right,
+                                          size: 20, color: Color(0xFF273142)),
                                     ],
                                   ),
                                 ),
@@ -420,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                           const SizedBox(height: 18),
 
-                          /// TODAY / TASK PREVIEW
+                          // ── TO-DO ──
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 22),
                             padding: const EdgeInsets.all(18),
@@ -452,17 +426,13 @@ class _HomeScreenState extends State<HomeScreen>
                                     ),
                                     GestureDetector(
                                       onTap: () {
-                                        MainNavigation.navKey.currentState
-                                            ?.switchTab(1);
+                                        MainNavigation.navKey.currentState?.switchTab(1);
                                       },
-                                      child: SizedBox(
+                                      child: const SizedBox(
                                         width: 28,
                                         height: 28,
-                                        child: const Icon(
-                                          Icons.chevron_right,
-                                          size: 20,
-                                          color: Color(0xFF273142),
-                                        ),
+                                        child: Icon(Icons.chevron_right,
+                                            size: 20, color: Color(0xFF273142)),
                                       ),
                                     ),
                                   ],
@@ -485,8 +455,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   else
                                     ...todoTasks.take(3).map(
                                       (task) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 8),
+                                        padding: const EdgeInsets.only(bottom: 8),
                                         child: _TaskRow(
                                           title: task.title,
                                           done: false,
@@ -505,14 +474,11 @@ class _HomeScreenState extends State<HomeScreen>
                                   ),
                                   const SizedBox(height: 10),
                                   if (doneTasks.isEmpty)
-                                    const _NoPlanBox(
-                                      text: "No completed plan",
-                                    )
+                                    const _NoPlanBox(text: "No completed plan")
                                   else
                                     ...doneTasks.take(2).map(
                                       (task) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 8),
+                                        padding: const EdgeInsets.only(bottom: 8),
                                         child: _TaskRow(
                                           title: task.title,
                                           done: true,
@@ -524,6 +490,221 @@ class _HomeScreenState extends State<HomeScreen>
                               ],
                             ),
                           ),
+
+                          const SizedBox(height: 18),
+
+                          // ── GOAL PROGRESS CARD ── (ใหม่!)
+                          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                            stream: GoalProgressService.watchCurrentGoal(),
+                            builder: (context, goalSnap) {
+                              final data = goalSnap.data?.data();
+
+                              // ไม่มี goal ที่กำลังทำอยู่
+                              if (data == null) {
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 22),
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(18),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 42,
+                                        height: 42,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF0EBFF),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Center(
+                                          child: Text("🎯", style: TextStyle(fontSize: 20)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      const Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "No Active Goal",
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF273142),
+                                              ),
+                                            ),
+                                            SizedBox(height: 2),
+                                            Text(
+                                              "Set a goal in Settings → Goal",
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Color(0xFF9A9A9A),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () => Navigator.pushNamed(context, '/settings'),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 7),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF0EBFF),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Text(
+                                            "Set Goal",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF7B5EA7),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              // มี goal อยู่ → แสดง progress
+                              final goalId       = data['goalId']?.toString() ?? '';
+                              final title        = data['title']?.toString() ?? 'Goal';
+                              final colorValue   = data['colorValue'] as int? ?? 0xFFE9D9A8;
+                              final accentValue  = data['accentColorValue'] as int? ?? 0xFF7B5EA7;
+                              final selectedDay  = data['selectedDay'] as int? ?? 1;
+                              final totalDays    = data['totalDays'] as int? ?? 30;
+                              final completedDays =
+                                  (data['completedDays'] as List<dynamic>? ?? [])
+                                      .map((e) => e as int)
+                                      .toList();
+                              final progress = totalDays == 0
+                                  ? 0.0
+                                  : completedDays.length / totalDays;
+                              final accentColor  = Color(accentValue);
+                              final bgColor      = Color(colorValue);
+                              final activeGoal   = _findGoalById(goalId);
+
+                              return GestureDetector(
+                                onTap: activeGoal == null
+                                    ? null
+                                    : () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                GoalProgressScreen(goal: activeGoal),
+                                          ),
+                                        );
+                                      },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 22),
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    borderRadius: BorderRadius.circular(18),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.06),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // header row
+                                      Row(
+                                        children: [
+                                          const Text(
+                                            "🎯",
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Expanded(
+                                            child: Text(
+                                              "Ongoing Goal",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.black54,
+                                                letterSpacing: 0.2,
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(
+                                            Icons.chevron_right,
+                                            size: 18,
+                                            color: Colors.black45,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // goal title
+                                      Text(
+                                        title,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: accentColor,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // progress bar
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: LinearProgressIndicator(
+                                          value: progress,
+                                          minHeight: 7,
+                                          backgroundColor: Colors.white.withOpacity(0.45),
+                                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // day info
+                                      Row(
+                                        children: [
+                                          Text(
+                                            "Day $selectedDay of $totalDays",
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            "${completedDays.length} days done  "
+                                            "(${(progress * 100).round()}%)",
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black45,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
                           const SizedBox(height: 100),
                         ],
                       ),
@@ -539,24 +720,18 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
+// ─────────────────────────────────────────
+// OrbitView
+// ─────────────────────────────────────────
 class _OrbitView extends StatelessWidget {
   final List<MapEntry<String, int>> emotions;
   final double elapsed;
 
-  const _OrbitView({
-    required this.emotions,
-    required this.elapsed,
-  });
+  const _OrbitView({required this.emotions, required this.elapsed});
 
   static const Map<String, String> emojiMap = {
-    "happy": "😊",
-    "calm": "😌",
-    "neutral": "😐",
-    "stressed": "😰",
-    "love": "🥰",
-    "burnout": "🫠",
-    "angry": "😡",
-    "sad": "😭",
+    "happy": "😊", "calm": "😌", "neutral": "😐", "stressed": "😰",
+    "love": "🥰",  "burnout": "🫠","angry": "😡",  "sad": "😭",
   };
 
   @override
@@ -568,26 +743,8 @@ class _OrbitView extends StatelessWidget {
         final double maxCount =
             emotions.isNotEmpty ? emotions.first.value.toDouble() : 1.0;
 
-        const List<double> radii = [
-          40,
-          58,
-          74,
-          88,
-          100,
-          112,
-          122,
-          130
-        ];
-        const List<double> speeds = [
-          0.8,
-          0.55,
-          0.38,
-          0.28,
-          0.22,
-          0.17,
-          0.13,
-          0.10
-        ];
+        const List<double> radii  = [40, 58, 74, 88, 100, 112, 122, 130];
+        const List<double> speeds = [0.8, 0.55, 0.38, 0.28, 0.22, 0.17, 0.13, 0.10];
         const List<double> phases = [0.0, 1.0, 2.1, 0.5, 1.8, 3.0, 0.9, 2.5];
 
         final visibleRadii =
@@ -598,11 +755,7 @@ class _OrbitView extends StatelessWidget {
           children: [
             CustomPaint(
               size: Size(constraints.maxWidth, constraints.maxHeight),
-              painter: _AllRingsPainter(
-                cx: cx,
-                cy: cy,
-                radii: visibleRadii,
-              ),
+              painter: _AllRingsPainter(cx: cx, cy: cy, radii: visibleRadii),
             ),
             Positioned(
               left: cx - 20,
@@ -629,12 +782,11 @@ class _OrbitView extends StatelessWidget {
             for (int i = 0; i < emotions.length && i < radii.length; i++)
               Builder(
                 builder: (_) {
-                  final entry = emotions[i];
-                  final double ratio =
-                      maxCount == 0 ? 0.0 : entry.value / maxCount;
-                  final double size = 24.0 + (ratio * 18.0);
+                  final entry  = emotions[i];
+                  final double ratio = maxCount == 0 ? 0.0 : entry.value / maxCount;
+                  final double size  = 24.0 + (ratio * 18.0);
                   final double angle = (elapsed * speeds[i]) + phases[i];
-                  final double r = radii[i];
+                  final double r  = radii[i];
                   final double px = cx + r * math.cos(angle) - size / 2;
                   final double py = cy + r * math.sin(angle) - size / 2;
                   final color = EmotionColors.get(entry.key);
@@ -658,10 +810,7 @@ class _OrbitView extends StatelessWidget {
                         ],
                       ),
                       child: Center(
-                        child: Text(
-                          emoji,
-                          style: TextStyle(fontSize: size * 0.42),
-                        ),
+                        child: Text(emoji, style: TextStyle(fontSize: size * 0.42)),
                       ),
                     ),
                   );
@@ -673,10 +822,7 @@ class _OrbitView extends StatelessWidget {
                   alignment: const Alignment(0, 0.72),
                   child: Text(
                     "No emotions this week",
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
                   ),
                 ),
               ),
@@ -688,15 +834,10 @@ class _OrbitView extends StatelessWidget {
 }
 
 class _AllRingsPainter extends CustomPainter {
-  final double cx;
-  final double cy;
+  final double cx, cy;
   final List<double> radii;
 
-  const _AllRingsPainter({
-    required this.cx,
-    required this.cy,
-    required this.radii,
-  });
+  const _AllRingsPainter({required this.cx, required this.cy, required this.radii});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -704,30 +845,25 @@ class _AllRingsPainter extends CustomPainter {
       ..color = Colors.grey.withOpacity(0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-
     for (final r in radii) {
       canvas.drawCircle(Offset(cx, cy), r, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _AllRingsPainter oldDelegate) {
-    return oldDelegate.cx != cx ||
-        oldDelegate.cy != cy ||
-        oldDelegate.radii.length != radii.length;
-  }
+  bool shouldRepaint(covariant _AllRingsPainter old) =>
+      old.cx != cx || old.cy != cy || old.radii.length != radii.length;
 }
 
+// ─────────────────────────────────────────
+// Helper Widgets
+// ─────────────────────────────────────────
 class _HomeStatBox extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
 
-  const _HomeStatBox({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
+  const _HomeStatBox({required this.value, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -740,23 +876,13 @@ class _HomeStatBox extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF273142),
-            ),
-          ),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF273142))),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF8D8D8D),
-            ),
-          ),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF8D8D8D))),
         ],
       ),
     );
@@ -768,28 +894,18 @@ class _SummaryLine extends StatelessWidget {
   final int value;
   final Color color;
 
-  const _SummaryLine({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _SummaryLine({required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
     final double clamped = value.clamp(0, 100).toDouble() / 100.0;
-
     return Row(
       children: [
         SizedBox(
           width: 108,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF6D6D6D),
-            ),
-          ),
+          child: Text(label,
+              style: const TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF6D6D6D))),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -806,15 +922,10 @@ class _SummaryLine extends StatelessWidget {
         const SizedBox(width: 8),
         SizedBox(
           width: 36,
-          child: Text(
-            "$value%",
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF6D6D6D),
-            ),
-          ),
+          child: Text("$value%",
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6D6D6D))),
         ),
       ],
     );
@@ -826,11 +937,7 @@ class _TaskRow extends StatelessWidget {
   final bool done;
   final VoidCallback onTap;
 
-  const _TaskRow({
-    required this.title,
-    required this.done,
-    required this.onTap,
-  });
+  const _TaskRow({required this.title, required this.done, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -849,8 +956,7 @@ class _TaskRow extends StatelessWidget {
             Icon(
               done ? Icons.check_box : Icons.check_box_outline_blank,
               size: 18,
-              color:
-                  done ? const Color(0xFF7EDB95) : const Color(0xFFC5C5C5),
+              color: done ? const Color(0xFF7EDB95) : const Color(0xFFC5C5C5),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -873,10 +979,7 @@ class _TaskRow extends StatelessWidget {
 
 class _NoPlanBox extends StatelessWidget {
   final String text;
-
-  const _NoPlanBox({
-    this.text = "No plan",
-  });
+  const _NoPlanBox({this.text = "No plan"});
 
   @override
   Widget build(BuildContext context) {
@@ -891,10 +994,7 @@ class _NoPlanBox extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF9A9A9A),
-        ),
+            fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF9A9A9A)),
       ),
     );
   }

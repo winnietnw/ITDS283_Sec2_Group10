@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/goal_templates.dart';
-import '../widgets/header.dart';
 import '../widgets/animated_action_button.dart';
 import '../services/goal_progress_service.dart';
 import 'congratulation_screen.dart';
@@ -59,8 +58,6 @@ class GoalProgressScreen extends StatelessWidget {
               children: [
                 Column(
                   children: [
-                    const AppHeader(),
-                    const SizedBox(height: 10),
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(18, 8, 18, 110),
