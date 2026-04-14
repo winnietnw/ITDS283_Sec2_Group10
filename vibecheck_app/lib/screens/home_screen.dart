@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _toggleTask(TaskData task) async {
     await FirebaseFirestore.instance.collection('tasks').doc(task.id).update({
-      'done': !task.done,
+      'isCompleted': !task.done,
     });
   }
 
@@ -262,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen>
                         (data['title']?.toString().trim().isNotEmpty ?? false)
                             ? data['title'].toString()
                             : 'Untitled Task',
-                    done: data['done'] == true,
+                    done: data['isCompleted'] == true,
                   );
                 }).toList();
 
@@ -442,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   children: [
                                     const Expanded(
                                       child: Text(
-                                        "Today",
+                                        "TO-DO",
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w800,
@@ -451,34 +451,23 @@ class _HomeScreenState extends State<HomeScreen>
                                       ),
                                     ),
                                     GestureDetector(
-                                      onTap: _showAddTaskDialog,
-                                      child: Container(
+                                      onTap: () {
+                                        MainNavigation.navKey.currentState
+                                            ?.switchTab(1);
+                                      },
+                                      child: SizedBox(
                                         width: 28,
                                         height: 28,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFEFF4FF),
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                        ),
                                         child: const Icon(
-                                          Icons.add,
-                                          size: 18,
-                                          color: Color(0xFF7BA7FF),
+                                          Icons.chevron_right,
+                                          size: 20,
+                                          color: Color(0xFF273142),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 3),
-                                Text(
-                                  _dateLabel(weekRange),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF8D8D8D),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
                                 const Text(
                                   "Tasks",
                                   style: TextStyle(
