@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/animated_action_button.dart';
 import '../data/goal_templates.dart';
 import 'goal_progress_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class GoalsCategoriesScreen extends StatefulWidget {
   const GoalsCategoriesScreen({super.key});
@@ -334,7 +335,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                       StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                         stream: FirebaseFirestore.instance
                             .collection('goal_progress')
-                            .doc('current_active')
+                            .doc('current_active_${FirebaseAuth.instance.currentUser?.uid ?? 'unknown'}')
                             .snapshots(),
                         builder: (context, snapshot) {
                           final data = snapshot.data?.data();

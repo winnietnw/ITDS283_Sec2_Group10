@@ -1,16 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../data/goal_templates.dart';
 
 class GoalProgressService {
   static CollectionReference<Map<String, dynamic>> get _ref =>
       FirebaseFirestore.instance.collection('goal_progress');
 
+  // ✅ doc id แยกตาม user
+  static String get _docId {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+    return 'current_active_$uid';
+  }
+
   static String monthKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}';
 
   static Future<void> startGoal(GoalTemplate goal) async {
     final totalDays = goal.monthlyPlans.length;
-    await _ref.doc('current_active').set({
+    await _ref.doc(_docId).set({
       'goalId': goal.id,
       'title': goal.title,
       'classification': goal.classification,
@@ -27,24 +34,23 @@ class GoalProgressService {
   }
 
   static Stream<DocumentSnapshot<Map<String, dynamic>>> watchCurrentGoal() {
-    return _ref.doc('current_active').snapshots();
+    return _ref.doc(_docId).snapshots();
   }
 
   static Future<void> selectDay(int day) async {
-    await _ref.doc('current_active').update({'selectedDay': day});
+    await _ref.doc(_docId).update({'selectedDay': day});
   }
 
   static Future<void> completeDay({
     required int day,
     required int totalDays,
   }) async {
-    final doc = await _ref.doc('current_active').get();
+    final doc = await _ref.doc(_docId).get();
     final data = doc.data();
     if (data == null) return;
 
     final List<dynamic> raw = (data['completedDays'] as List<dynamic>? ?? []);
     final completed = raw.map((e) => e as int).toSet();
-
     completed.add(day);
 
     int unlockedUntil = data['unlockedUntil'] as int? ?? 3;
@@ -67,7 +73,7 @@ class GoalProgressService {
 
     final isCompleted = completed.length >= totalDays;
 
-    await _ref.doc('current_active').update({
+    await _ref.doc(_docId).update({
       'completedDays': completed.toList()..sort(),
       'unlockedUntil': unlockedUntil,
       'isCompleted': isCompleted,
@@ -75,6 +81,6 @@ class GoalProgressService {
   }
 
   static Future<void> clearActiveGoal() async {
-    await _ref.doc('current_active').delete();
+    await _ref.doc(_docId).delete();
   }
 }
