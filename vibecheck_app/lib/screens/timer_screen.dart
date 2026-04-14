@@ -37,7 +37,6 @@ class _TimerScreenState extends State<TimerScreen>
     super.dispose();
   }
 
-  // ✅ สีของแต่ละ mode
   static Color _modeColor(String mode) {
     switch (mode) {
       case 'Focus':
@@ -52,7 +51,7 @@ class _TimerScreenState extends State<TimerScreen>
   void _openSetPlan() async {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      isScrollControlled: false, // ✅ ไม่ scroll
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _SetPlanSheet(
         initialPlan: _plan,
@@ -60,6 +59,7 @@ class _TimerScreenState extends State<TimerScreen>
         initialMinutes: _selectedMinutes,
       ),
     );
+
     if (result != null) {
       setState(() {
         _plan = result['plan'] ?? '';
@@ -75,7 +75,6 @@ class _TimerScreenState extends State<TimerScreen>
       backgroundColor: const Color(0xFFEFFFDF),
       body: SafeArea(
         child: CustomScrollView(
-          physics: const NeverScrollableScrollPhysics(), // ✅ หน้าหลักก็ไม่ scroll
           slivers: [
             SliverAppBar(
               pinned: true,
@@ -100,14 +99,14 @@ class _TimerScreenState extends State<TimerScreen>
                   children: [
                     const SizedBox(height: 8),
 
-                    // History icon
                     Row(
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const AnalyticsScreen()),
+                              builder: (_) => const AnalyticsScreen(),
+                            ),
                           ),
                           child: Container(
                             width: 36,
@@ -116,8 +115,11 @@ class _TimerScreenState extends State<TimerScreen>
                               color: Colors.white.withOpacity(0.7),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.history,
-                                size: 18, color: Colors.black54),
+                            child: const Icon(
+                              Icons.history,
+                              size: 18,
+                              color: Colors.black54,
+                            ),
                           ),
                         ),
                       ],
@@ -125,18 +127,18 @@ class _TimerScreenState extends State<TimerScreen>
 
                     const SizedBox(height: 24),
 
-                    // Set Plan button — สีตาม mode ที่เลือก
                     GestureDetector(
                       onTap: _openSetPlan,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 9),
+                          horizontal: 20,
+                          vertical: 9,
+                        ),
                         decoration: BoxDecoration(
                           color: _modeColor(_selectedMode).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color:
-                                _modeColor(_selectedMode).withOpacity(0.4),
+                            color: _modeColor(_selectedMode).withOpacity(0.4),
                             width: 1,
                           ),
                         ),
@@ -152,9 +154,11 @@ class _TimerScreenState extends State<TimerScreen>
                               ),
                             ),
                             const SizedBox(width: 4),
-                            Icon(Icons.chevron_right,
-                                size: 16,
-                                color: _modeColor(_selectedMode)),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: _modeColor(_selectedMode),
+                            ),
                           ],
                         ),
                       ),
@@ -162,7 +166,6 @@ class _TimerScreenState extends State<TimerScreen>
 
                     const SizedBox(height: 40),
 
-                    // Clock
                     _TickFadeClock(
                       minutes: _selectedMinutes,
                       plan: _plan.isEmpty ? 'Focus' : _plan,
@@ -170,21 +173,21 @@ class _TimerScreenState extends State<TimerScreen>
 
                     const SizedBox(height: 36),
 
-                    // Mode chips — แต่ละอันสีของตัวเอง
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: ['Normal', 'Focus', 'Strict'].map((mode) {
                         final isSelected = _selectedMode == mode;
                         final modeColor = _modeColor(mode);
+
                         return GestureDetector(
-                          onTap: () =>
-                              setState(() => _selectedMode = mode),
+                          onTap: () => setState(() => _selectedMode = mode),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
-                            margin:
-                                const EdgeInsets.symmetric(horizontal: 4),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 7),
+                              horizontal: 16,
+                              vertical: 7,
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? modeColor
@@ -193,11 +196,10 @@ class _TimerScreenState extends State<TimerScreen>
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
-                                        color:
-                                            modeColor.withOpacity(0.3),
+                                        color: modeColor.withOpacity(0.3),
                                         blurRadius: 8,
                                         offset: const Offset(0, 3),
-                                      )
+                                      ),
                                     ]
                                   : [],
                             ),
@@ -220,22 +222,22 @@ class _TimerScreenState extends State<TimerScreen>
 
                     const SizedBox(height: 40),
 
-                    // ✅ Start button — gradient เด่นกว่า Set Plan
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => TimerRunningScreen(
                             totalSeconds: _selectedMinutes * 60,
-                            focusLabel:
-                                _plan.isEmpty ? 'Focus' : _plan,
+                            focusLabel: _plan.isEmpty ? 'Focus' : _plan,
                             mode: _selectedMode,
                           ),
                         ),
                       ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 48, vertical: 16),
+                          horizontal: 48,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF7B5EA7),
                           borderRadius: BorderRadius.circular(32),
@@ -260,8 +262,11 @@ class _TimerScreenState extends State<TimerScreen>
                               ),
                             ),
                             SizedBox(width: 8),
-                            Icon(Icons.play_arrow_rounded,
-                                size: 20, color: Colors.white),
+                            Icon(
+                              Icons.play_arrow_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
                           ],
                         ),
                       ),
@@ -279,14 +284,14 @@ class _TimerScreenState extends State<TimerScreen>
   }
 }
 
-// ══════════════════════════════════════════════════════
-// Tick-Fade Clock
-// ══════════════════════════════════════════════════════
 class _TickFadeClock extends StatelessWidget {
   final int minutes;
   final String plan;
 
-  const _TickFadeClock({required this.minutes, required this.plan});
+  const _TickFadeClock({
+    required this.minutes,
+    required this.plan,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -343,15 +348,16 @@ class _TickFadeClockPainter extends CustomPainter {
       final isMajor = i % 5 == 0;
       final tickLen = isMajor ? 12.0 : 7.0;
       final strokeW = isMajor ? 2.0 : 1.2;
-
-      // เต็มวงเสมอ — จากเข้มไปจาง
       final opacity = (1.0 - (i / 60) * 0.82).clamp(0.08, 1.0);
 
       final p1 = Offset(
-          cx + (r - tickLen) * cos(angle),
-          cy + (r - tickLen) * sin(angle));
-      final p2 =
-          Offset(cx + r * cos(angle), cy + r * sin(angle));
+        cx + (r - tickLen) * cos(angle),
+        cy + (r - tickLen) * sin(angle),
+      );
+      final p2 = Offset(
+        cx + r * cos(angle),
+        cy + r * sin(angle),
+      );
 
       canvas.drawLine(
         p1,
@@ -365,13 +371,11 @@ class _TickFadeClockPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _TickFadeClockPainter old) =>
-      old.minutes != minutes;
+  bool shouldRepaint(covariant _TickFadeClockPainter oldDelegate) {
+    return oldDelegate.minutes != minutes;
+  }
 }
 
-// ══════════════════════════════════════════════════════
-// Set Plan Bottom Sheet
-// ══════════════════════════════════════════════════════
 class _SetPlanSheet extends StatefulWidget {
   final String initialPlan;
   final String initialMode;
@@ -398,7 +402,6 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
 
   final List<String> _modes = ['Normal', 'Focus', 'Strict'];
 
-  // ✅ สีแต่ละ mode
   static Color _modeColor(String mode) {
     switch (mode) {
       case 'Focus':
@@ -416,10 +419,12 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
     _selectedPlan = widget.initialPlan;
     _mode = widget.initialMode;
     _minutes = widget.initialMinutes;
+
     if (![15, 30, 45, 60].contains(_minutes)) {
       _isCustomMinutes = true;
       _customMinCtrl.text = _minutes.toString();
     }
+
     _loadTasks();
   }
 
@@ -427,9 +432,12 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) {
-        if (mounted) setState(() => _loadingTasks = false);
+        if (mounted) {
+          setState(() => _loadingTasks = false);
+        }
         return;
       }
+
       final snap = await FirebaseFirestore.instance
           .collection('tasks')
           .where('userId', isEqualTo: uid)
@@ -446,7 +454,9 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loadingTasks = false);
+      if (mounted) {
+        setState(() => _loadingTasks = false);
+      }
     }
   }
 
@@ -467,336 +477,406 @@ class _SetPlanSheetState extends State<_SetPlanSheet> {
   Widget build(BuildContext context) {
     final currentModeColor = _modeColor(_mode);
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFFFDF),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Back
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back,
-                size: 20, color: Colors.black87),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Plan dropdown ──
-          const Text('Plan',
-              style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _loadingTasks
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF7B5EA7),
-                        ),
-                      ),
-                    ),
-                  )
-                : _tasks.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text(
-                          'No pending tasks',
-                          style: TextStyle(
-                              color: Colors.grey, fontSize: 13),
-                        ),
-                      )
-                    : DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _tasks.contains(_selectedPlan)
-                              ? _selectedPlan
-                              : null,
-                          hint: const Text('Select a task',
-                              style: TextStyle(
-                                  color: Colors.grey, fontSize: 14)),
-                          isExpanded: true,
-                          icon: const Icon(Icons.unfold_more,
-                              color: Colors.grey, size: 18),
-                          dropdownColor: const Color(0xFFEFFFDF),
-                          borderRadius: BorderRadius.circular(16),
-                          items: [
-                            const DropdownMenuItem(
-                              value: '',
-                              child: Text('No specific task',
-                                  style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14)),
-                            ),
-                            ..._tasks.map((t) => DropdownMenuItem(
-                                  value: t,
-                                  child: Text(t,
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.black87)),
-                                )),
-                          ],
-                          onChanged: (v) => setState(
-                              () => _selectedPlan = v ?? ''),
-                        ),
-                      ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Mode selector ──
-          const Text('Mode',
-              style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
-          Row(
-            children: _modes.map((m) {
-              final isSelected = _mode == m;
-              final modeColor = _modeColor(m); // ✅ สีของตัวเอง
-              return Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: GestureDetector(
-                  onTap: () => setState(() => _mode = m),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? modeColor
-                          : Colors.white.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: modeColor.withOpacity(0.25),
-                                blurRadius: 8,
-                              )
-                            ]
-                          : [],
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          m == 'Normal'
-                              ? Icons.nature
-                              : m == 'Focus'
-                                  ? Icons.center_focus_strong
-                                  : Icons.lock_outline,
-                          size: 22,
-                          color: isSelected
-                              ? Colors.white
-                              : Colors.black38,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(m,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.black38,
-                            )),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Duration ──
-          const Text('Duration',
-              style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ...[15, 30, 45, 60].map((min) {
-                final isSelected =
-                    !_isCustomMinutes && _minutes == min;
-                return GestureDetector(
-                  onTap: () => setState(() {
-                    _minutes = min;
-                    _isCustomMinutes = false;
-                  }),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? currentModeColor
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border:
-                          Border.all(color: Colors.grey.shade200),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: currentModeColor
-                                    .withOpacity(0.25),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
-                          : [],
-                    ),
-                    child: Text(
-                      '$min min',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isSelected
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-              // Custom chip
-              GestureDetector(
-                onTap: () =>
-                    setState(() => _isCustomMinutes = true),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _isCustomMinutes
-                        ? currentModeColor
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: _isCustomMinutes
-                        ? [
-                            BoxShadow(
-                              color: currentModeColor
-                                  .withOpacity(0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            )
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    'Custom',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: _isCustomMinutes
-                          ? Colors.white
-                          : Colors.black87,
-                    ),
-                  ),
-                ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.68,
+      minChildSize: 0.55,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (_, scrollController) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFFFDF),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, -4),
               ),
             ],
           ),
-
-          if (_isCustomMinutes) ...[
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: currentModeColor.withOpacity(0.4)),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.of(context).viewInsets.bottom + 24,
               ),
-              child: TextField(
-                controller: _customMinCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'Enter minutes (e.g. 90, 120)',
-                  hintStyle:
-                      TextStyle(color: Colors.grey, fontSize: 13),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  suffixText: 'min',
-                  suffixStyle: TextStyle(color: Colors.grey),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // ✅ Confirm button — gradient สีตาม mode
-          SizedBox(
-            width: double.infinity,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context, {
-                'plan': _selectedPlan,
-                'mode': _mode,
-                'minutes': _effectiveMinutes,
-              }),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      currentModeColor.withOpacity(0.8),
-                      currentModeColor,
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: Colors.black87,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: currentModeColor.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Plan',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _loadingTasks
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF7B5EA7),
+                                ),
+                              ),
+                            ),
+                          )
+                        : _tasks.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 14),
+                                child: Text(
+                                  'No pending tasks',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              )
+                            : DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _tasks.contains(_selectedPlan)
+                                      ? _selectedPlan
+                                      : null,
+                                  hint: const Text(
+                                    'Select a task',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  isExpanded: true,
+                                  icon: const Icon(
+                                    Icons.unfold_more,
+                                    color: Colors.grey,
+                                    size: 18,
+                                  ),
+                                  dropdownColor: const Color(0xFFEFFFDF),
+                                  borderRadius: BorderRadius.circular(16),
+                                  items: [
+                                    const DropdownMenuItem(
+                                      value: '',
+                                      child: Text(
+                                        'No specific task',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    ..._tasks.map(
+                                      (t) => DropdownMenuItem(
+                                        value: t,
+                                        child: Text(
+                                          t,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: (v) {
+                                    setState(() => _selectedPlan = v ?? '');
+                                  },
+                                ),
+                              ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Mode',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: _modes.map((m) {
+                      final isSelected = _mode == m;
+                      final modeColor = _modeColor(m);
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _mode = m),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 92,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? modeColor
+                                : Colors.white.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: modeColor.withOpacity(0.25),
+                                      blurRadius: 8,
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                m == 'Normal'
+                                    ? Icons.nature
+                                    : m == 'Focus'
+                                        ? Icons.center_focus_strong
+                                        : Icons.lock_outline,
+                                size: 22,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.black38,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                m,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black38,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Duration',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ...[15, 30, 45, 60].map((min) {
+                        final isSelected = !_isCustomMinutes && _minutes == min;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _minutes = min;
+                              _isCustomMinutes = false;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? currentModeColor
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.grey.shade200),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color:
+                                            currentModeColor.withOpacity(0.25),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : [],
+                            ),
+                            child: Text(
+                              '$min min',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+
+                      GestureDetector(
+                        onTap: () => setState(() => _isCustomMinutes = true),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _isCustomMinutes
+                                ? currentModeColor
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.grey.shade200),
+                            boxShadow: _isCustomMinutes
+                                ? [
+                                    BoxShadow(
+                                      color:
+                                          currentModeColor.withOpacity(0.25),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                          child: Text(
+                            'Custom',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: _isCustomMinutes
+                                  ? Colors.white
+                                  : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  if (_isCustomMinutes) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: currentModeColor.withOpacity(0.4),
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _customMinCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter minutes (e.g. 90, 120)',
+                          hintStyle: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          suffixText: 'min',
+                          suffixStyle: TextStyle(color: Colors.grey),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
                     ),
                   ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text('Confirm', // ✅ เปลี่ยนจาก Start
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        )),
-                    SizedBox(width: 6),
-                    Icon(Icons.check_rounded, // ✅ icon check
-                        size: 20, color: Colors.white),
-                  ],
-                ),
+
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context, {
+                        'plan': _selectedPlan,
+                        'mode': _mode,
+                        'minutes': _effectiveMinutes,
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              currentModeColor.withOpacity(0.8),
+                              currentModeColor,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: currentModeColor.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text(
+                              'Confirm',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Icon(
+                              Icons.check_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
