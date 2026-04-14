@@ -28,11 +28,11 @@ class _MainNavigationState extends State<MainNavigation> {
   
   // ✅ สีพื้นหลังของแต่ละ tab
   static const List<Color> _bgColors = [
-    Color(0xFFF7EDEF), // Home — ชมพูอ่อน
-    Color(0xFFF9F5F9), // Tasks — ขาวม่วงอ่อน
-    Color(0xFFE8F5E9), // Timer — เขียวอ่อน
-    Color(0xFFE8EEF9), // Emotion — ฟ้าอ่อน
-    Color(0xFFE8E8F8), // Settings — ม่วงอ่อน
+    Color(0xFFFFEFF3), // Home — ชมพูอ่อน
+    Color(0xFFFDFAF2), // Tasks — ขาวม่วงอ่อน
+    Color(0xFFEFFFDF), // Timer — เขียวอ่อน
+    Color(0xFFF2F6FD), // Emotion — ฟ้าอ่อน
+    Color(0xFFEDEDFF), // Settings — ม่วงอ่อน
   ];
 
   final List<Widget> _screens = [
