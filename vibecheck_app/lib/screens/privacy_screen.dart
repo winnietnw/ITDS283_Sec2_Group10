@@ -10,71 +10,50 @@ class PrivacyScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
+            // ✅ Fixed top bar — ไม่เลื่อน
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        )],
+                      ),
+                      child: const Icon(Icons.arrow_back, size: 20, color: Colors.black87),
+                    ),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text('Privacy Policy',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                ],
+              ),
+            ),
+
+            // ✅ เนื้อหา scroll ได้
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                padding: const EdgeInsets.fromLTRB(18, 15, 18, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// 🔙 Header
-                    Row(
-                      children: [
-                        /// 🔙 ปุ่มย้อนกลับ (แบบมีพื้นหลัง)
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back,
-                              size: 20,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-
-                        /// 🧠 Title (อยู่กลางจริง)
-                        const Expanded(
-                          child: Center(
-                            child: Text(
-                              'Privacy Policy',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        /// ช่องว่าง balance layout
-                        const SizedBox(width: 40),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// 📜 Content
                     const Text(
                       'VibeCheck Privacy Policy & User Agreement',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-
                     const SizedBox(height: 12),
-
                     const Text(
                       '''
 This Privacy Policy explains how VibeCheck collects, uses, and protects your personal information.
@@ -105,9 +84,9 @@ We may update this policy at any time. Continued use means you accept the update
 User Agreement
 
 By using VibeCheck, you agree to:
-• Use the app responsibly  
-• Not misuse or exploit system features  
-• Respect data privacy of yourself and others  
+- Use the app responsibly  
+- Not misuse or exploit system features  
+- Respect data privacy of yourself and others  
 
 If you do not agree with these terms, please discontinue use of the application.
 
@@ -115,11 +94,7 @@ If you do not agree with these terms, please discontinue use of the application.
 
 Last Updated: 2026
                       ''',
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 14, height: 1.6, color: Colors.black87),
                     ),
                   ],
                 ),

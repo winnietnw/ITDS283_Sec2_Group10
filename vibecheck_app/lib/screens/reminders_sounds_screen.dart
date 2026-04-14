@@ -36,8 +36,7 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
   @override
   void initState() {
     super.initState();
-    emailText =
-        FirebaseAuth.instance.currentUser?.email ?? 'youremail@gmail.com';
+    emailText = FirebaseAuth.instance.currentUser?.email ?? 'youremail@gmail.com';
   }
 
   Future<void> _showPopupOptions({
@@ -52,42 +51,29 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
     final selected = await showMenu<String>(
       context: context,
       position: RelativeRect.fromRect(
-        Rect.fromLTWH(
-          details.globalPosition.dx,
-          details.globalPosition.dy,
-          1,
-          1,
-        ),
+        Rect.fromLTWH(details.globalPosition.dx, details.globalPosition.dy, 1, 1),
         Offset.zero & overlay.size,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       items: options
-          .map(
-            (option) => PopupMenuItem<String>(
-              value: option,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      option,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF253142),
-                      ),
+          .map((option) => PopupMenuItem<String>(
+                value: option,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(option,
+                          style: const TextStyle(
+                              fontSize: 14, color: Color(0xFF253142))),
                     ),
-                  ),
-                  if (option == currentValue)
-                    const Icon(Icons.check, size: 18, color: Color(0xFF8FB8FF)),
-                ],
-              ),
-            ),
-          )
+                    if (option == currentValue)
+                      const Icon(Icons.check, size: 18, color: Color(0xFF8FB8FF)),
+                  ],
+                ),
+              ))
           .toList(),
     );
 
-    if (selected != null) {
-      onSelected(selected);
-    }
+    if (selected != null) onSelected(selected);
   }
 
   Future<void> _pickTime({
@@ -129,49 +115,39 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFE8E8F8),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 28, 18, 24),
+        child: Column(
+          children: [
+            // ✅ Fixed top bar — ไม่เลื่อน
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 26, 16, 4),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const SizedBox(
+                      width: 40,
+                      child: Icon(Icons.arrow_back, size: 24, color: Colors.black87),
+                    ),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text('Reminders and Sounds',
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w700, color: Colors.black87)),
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                ],
+              ),
+            ),
+
+            // ✅ content scroll ได้
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        /// ⬅️ ปุ่มย้อนกลับ (fixed ซ้าย)
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const SizedBox(
-                            width: 40,
-                            child: Icon(
-                              Icons.arrow_back,
-                              size: 24,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-
-                        /// 🎯 TITLE อยู่กลางจริง
-                        const Expanded(
-                          child: Center(
-                            child: Text(
-                              'Reminders and Sounds',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        /// ⚖️ balance ขวาให้ตรงกลางจริง
-                        const SizedBox(width: 40),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-
                     _settingCard(
                       icon: Icons.notifications_none,
                       title: 'Notification and Reminder',
@@ -182,9 +158,8 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                         onLeftTap: () {},
                         rightOptions: _appReminderOptions,
                         currentValue: appReminderStatus,
-                        onRightSelected: (value) {
-                          setState(() => appReminderStatus = value);
-                        },
+                        onRightSelected: (value) =>
+                            setState(() => appReminderStatus = value),
                       ),
                     ),
 
@@ -195,14 +170,9 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       title: 'Email Reminders',
                       trailing: SmallGradientToggle(
                         value: emailReminder,
-                        onChanged: (value) {
-                          setState(() => emailReminder = value);
-                        },
+                        onChanged: (value) => setState(() => emailReminder = value),
                       ),
-                      child: _inputLikeTile(
-                        leftText: 'Email',
-                        rightText: emailText,
-                      ),
+                      child: _inputLikeTile(leftText: 'Email', rightText: emailText),
                     ),
 
                     const SizedBox(height: 14),
@@ -212,46 +182,34 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       title: 'Daily Reminders',
                       trailing: SmallGradientToggle(
                         value: dailyReminder,
-                        onChanged: (value) {
-                          setState(() => dailyReminder = value);
-                        },
+                        onChanged: (value) => setState(() => dailyReminder = value),
                       ),
                       child: Column(
                         children: [
                           _optionTile(
                             leftText: morningTime,
                             rightText: morningStatus,
-                            onLeftTap: () {
-                              _pickTime(
-                                initialTime: morningTime,
-                                onSelected: (value) {
-                                  setState(() => morningTime = value);
-                                },
-                              );
-                            },
+                            onLeftTap: () => _pickTime(
+                              initialTime: morningTime,
+                              onSelected: (value) => setState(() => morningTime = value),
+                            ),
                             rightOptions: _pendingOptions,
                             currentValue: morningStatus,
-                            onRightSelected: (value) {
-                              setState(() => morningStatus = value);
-                            },
+                            onRightSelected: (value) =>
+                                setState(() => morningStatus = value),
                           ),
                           const SizedBox(height: 10),
                           _optionTile(
                             leftText: eveningTime,
                             rightText: eveningStatus,
-                            onLeftTap: () {
-                              _pickTime(
-                                initialTime: eveningTime,
-                                onSelected: (value) {
-                                  setState(() => eveningTime = value);
-                                },
-                              );
-                            },
+                            onLeftTap: () => _pickTime(
+                              initialTime: eveningTime,
+                              onSelected: (value) => setState(() => eveningTime = value),
+                            ),
                             rightOptions: _pendingOptions,
                             currentValue: eveningStatus,
-                            onRightSelected: (value) {
-                              setState(() => eveningStatus = value);
-                            },
+                            onRightSelected: (value) =>
+                                setState(() => eveningStatus = value),
                           ),
                         ],
                       ),
@@ -263,9 +221,7 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.vibration,
                       title: 'Vibration',
                       value: vibration,
-                      onChanged: (value) {
-                        setState(() => vibration = value);
-                      },
+                      onChanged: (value) => setState(() => vibration = value),
                     ),
 
                     const SizedBox(height: 14),
@@ -274,9 +230,7 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.smart_button_outlined,
                       title: 'Button Sound',
                       value: buttonSound,
-                      onChanged: (value) {
-                        setState(() => buttonSound = value);
-                      },
+                      onChanged: (value) => setState(() => buttonSound = value),
                     ),
 
                     const SizedBox(height: 14),
@@ -285,9 +239,7 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.check_circle_outline,
                       title: 'Completion Sound',
                       value: completionSound,
-                      onChanged: (value) {
-                        setState(() => completionSound = value);
-                      },
+                      onChanged: (value) => setState(() => completionSound = value),
                     ),
 
                     const SizedBox(height: 14),
@@ -296,9 +248,7 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.edit_calendar_outlined,
                       title: 'Reminder Plan Sound',
                       value: reminderPlanSound,
-                      onChanged: (value) {
-                        setState(() => reminderPlanSound = value);
-                      },
+                      onChanged: (value) => setState(() => reminderPlanSound = value),
                     ),
                   ],
                 ),
@@ -330,14 +280,11 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
               Icon(icon, size: 20, color: Colors.black87),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
+                child: Text(title,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87)),
               ),
               if (trailing != null) trailing,
             ],
@@ -367,14 +314,11 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
           Icon(icon, size: 20, color: Colors.black87),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
+            child: Text(title,
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87)),
           ),
           SmallGradientToggle(value: value, onChanged: onChanged),
         ],
@@ -401,14 +345,8 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
         children: [
           GestureDetector(
             onTap: onLeftTap,
-            child: Row(
-              children: [
-                Text(
-                  leftText,
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-              ],
-            ),
+            child: Text(leftText,
+                style: const TextStyle(fontSize: 14, color: Colors.black87)),
           ),
           const Spacer(),
           Builder(
@@ -429,22 +367,15 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                   children: [
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 165),
-                      child: Text(
-                        rightText,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.blueGrey,
-                        ),
-                      ),
+                      child: Text(rightText,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.blueGrey)),
                     ),
                     const SizedBox(width: 2),
-                    const Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 18,
-                      color: Colors.black54,
-                    ),
+                    const Icon(Icons.keyboard_arrow_down,
+                        size: 18, color: Colors.black54),
                   ],
                 ),
               );
@@ -455,7 +386,8 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
     );
   }
 
-  Widget _inputLikeTile({required String leftText, required String rightText}) {
+  Widget _inputLikeTile(
+      {required String leftText, required String rightText}) {
     return Container(
       height: 46,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -465,19 +397,15 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
       ),
       child: Row(
         children: [
-          Text(
-            leftText,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-          ),
+          Text(leftText,
+              style: const TextStyle(fontSize: 14, color: Colors.black87)),
           const Spacer(),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 190),
-            child: Text(
-              rightText,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 13, color: Colors.blueGrey),
-            ),
+            child: Text(rightText,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
           ),
         ],
       ),

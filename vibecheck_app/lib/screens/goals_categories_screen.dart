@@ -27,14 +27,11 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
 
   Future<void> _showAddDialog() async {
     _controller.clear();
-
     await showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           title: Text(
             selectedTab == 0 ? 'New Classification' : 'New Target',
             style: const TextStyle(fontWeight: FontWeight.w700),
@@ -63,14 +60,10 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF232531),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _submitNewItem,
-              child: const Text(
-                'Add',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Add', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -91,9 +84,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
       int nextOrder = 0;
       if (snap.docs.isNotEmpty) {
         final lastOrder = snap.docs.first.data()['order'];
-        if (lastOrder is int) {
-          nextOrder = lastOrder + 1;
-        }
+        if (lastOrder is int) nextOrder = lastOrder + 1;
       }
 
       await _classificationCollection.add({
@@ -108,18 +99,12 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
 
   Future<void> _editClassification(String docId, String oldValue) async {
     final controller = TextEditingController(text: oldValue);
-
     await showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: const Text(
-            'Edit',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w700)),
           content: TextField(
             controller: controller,
             maxLength: 15,
@@ -144,23 +129,15 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF232531),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
                 final text = controller.text.trim();
                 if (text.isEmpty) return;
-
-                await _classificationCollection.doc(docId).update({
-                  'title': text,
-                });
-
+                await _classificationCollection.doc(docId).update({'title': text});
                 if (mounted) Navigator.pop(context);
               },
-              child: const Text(
-                'Save',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -178,18 +155,14 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     int newIndex,
   ) async {
     if (newIndex > oldIndex) newIndex--;
-
-    final reordered =
-        List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(docs);
+    final reordered = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(docs);
     final moved = reordered.removeAt(oldIndex);
     reordered.insert(newIndex, moved);
 
     final batch = FirebaseFirestore.instance.batch();
-
     for (int i = 0; i < reordered.length; i++) {
       batch.update(reordered[i].reference, {'order': i});
     }
-
     await batch.commit();
   }
 
@@ -206,67 +179,58 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFE8E8F8),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 28, 18, 100),
-                child: Column(
-                  children: [
-                    Row(
+        child: Column(
+          children: [
+            // ✅ Fixed top bar — ไม่เลื่อน
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 26, 16, 4),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.pushReplacementNamed(context, '/settings');
+                      }
+                    },
+                    child: const SizedBox(
+                      width: 40,
+                      child: Icon(Icons.arrow_back, size: 24, color: Colors.black87),
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            if (Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            } else {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/settings',
-                              );
-                            }
-                          },
-                          child: const SizedBox(
-                            width: 40,
-                            child: Icon(
-                              Icons.arrow_back,
-                              size: 24,
-                              color: Colors.black87,
-                            ),
-                          ),
+                        _tabButton(
+                          title: 'Classification',
+                          active: selectedTab == 0,
+                          onTap: () => setState(() => selectedTab = 0),
                         ),
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _tabButton(
-                                title: 'Classification',
-                                active: selectedTab == 0,
-                                onTap: () {
-                                  setState(() => selectedTab = 0);
-                                },
-                              ),
-                              const SizedBox(width: 28),
-                              _tabButton(
-                                title: 'Goal',
-                                active: selectedTab == 1,
-                                onTap: () {
-                                  setState(() => selectedTab = 1);
-                                },
-                              ),
-                            ],
-                          ),
+                        const SizedBox(width: 28),
+                        _tabButton(
+                          title: 'Goal',
+                          active: selectedTab == 1,
+                          onTap: () => setState(() => selectedTab = 1),
                         ),
-                        const SizedBox(width: 40),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                  ),
+                  const SizedBox(width: 40),
+                ],
+              ),
+            ),
 
+            // ✅ content scroll ได้
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 15, 18, 100),
+                child: Column(
+                  children: [
                     if (selectedTab == 0)
                       StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: _classificationCollection
-                            .orderBy('order')
-                            .snapshots(),
+                        stream: _classificationCollection.orderBy('order').snapshots(),
                         builder: (context, snapshot) {
                           final docs = snapshot.data?.docs ?? [];
 
@@ -275,10 +239,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                               padding: EdgeInsets.only(top: 180),
                               child: Text(
                                 'No classification has been created yet',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
-                                ),
+                                style: TextStyle(fontSize: 14, color: Colors.black54),
                               ),
                             );
                           }
@@ -289,9 +250,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD6E0),
                                     borderRadius: BorderRadius.circular(20),
@@ -299,10 +258,9 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                   child: Text(
                                     'All (${docs.length})',
                                     style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87),
                                   ),
                                 ),
                               ),
@@ -313,24 +271,17 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                 itemCount: docs.length,
                                 buildDefaultDragHandles: false,
                                 onReorder: (oldIndex, newIndex) {
-                                  _reorderClassification(
-                                    docs,
-                                    oldIndex,
-                                    newIndex,
-                                  );
+                                  _reorderClassification(docs, oldIndex, newIndex);
                                 },
                                 itemBuilder: (context, index) {
                                   final doc = docs[index];
-                                  final title =
-                                      doc.data()['title']?.toString() ?? '';
+                                  final title = doc.data()['title']?.toString() ?? '';
 
                                   return Container(
                                     key: ValueKey(doc.id),
                                     margin: const EdgeInsets.only(bottom: 12),
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
-                                    ),
+                                        horizontal: 14, vertical: 12),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.88),
                                       borderRadius: BorderRadius.circular(14),
@@ -338,53 +289,37 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                     child: Row(
                                       children: [
                                         Expanded(
-                                          child: Text(
-                                            title,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
+                                          child: Text(title,
+                                              style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black87)),
                                         ),
                                         const SizedBox(width: 8),
                                         PopupMenuButton<String>(
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
+                                              borderRadius: BorderRadius.circular(12)),
                                           onSelected: (value) {
                                             if (value == 'edit') {
-                                              _editClassification(
-                                                doc.id,
-                                                title,
-                                              );
+                                              _editClassification(doc.id, title);
                                             } else if (value == 'delete') {
                                               _deleteClassification(doc.id);
                                             }
                                           },
                                           itemBuilder: (context) => const [
                                             PopupMenuItem<String>(
-                                              value: 'edit',
-                                              child: Text('Edit'),
-                                            ),
+                                                value: 'edit', child: Text('Edit')),
                                             PopupMenuItem<String>(
-                                              value: 'delete',
-                                              child: Text('Delete'),
-                                            ),
+                                                value: 'delete', child: Text('Delete')),
                                           ],
-                                          child: const Icon(
-                                            Icons.more_vert,
-                                            color: Colors.black54,
-                                          ),
+                                          child: const Icon(Icons.more_vert,
+                                              color: Colors.black54),
                                         ),
                                         const SizedBox(width: 8),
                                         ReorderableDragStartListener(
                                           index: index,
-                                          child: const Icon(
-                                            Icons.drag_handle,
-                                            color: Colors.black54,
-                                          ),
+                                          child: const Icon(Icons.drag_handle,
+                                              color: Colors.black54),
                                         ),
                                       ],
                                     ),
@@ -408,33 +343,28 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                             return SizedBox(
                               height: MediaQuery.of(context).size.height * 0.58,
                               child: const Center(
-                                child: Text(
-                                  'No ongoing goals',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black54,
-                                  ),
-                                ),
+                                child: Text('No ongoing goals',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black54)),
                               ),
                             );
                           }
 
                           final goalId = data['goalId']?.toString() ?? '';
                           final title = data['title']?.toString() ?? 'Goal';
-                          final colorValue =
-                              data['colorValue'] as int? ?? 0xFFE9D9A8;
+                          final colorValue = data['colorValue'] as int? ?? 0xFFE9D9A8;
                           final selectedDay = data['selectedDay'] as int? ?? 1;
                           final totalDays = data['totalDays'] as int? ?? 30;
                           final completedDays =
                               (data['completedDays'] as List<dynamic>? ?? [])
                                   .map((e) => e as int)
                                   .toList();
-
                           final activeGoal = _findGoalById(goalId);
 
                           return Padding(
-                            padding: const EdgeInsets.only(top: 116),
+                            padding: const EdgeInsets.only(top: 16),
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
@@ -452,58 +382,41 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Ongoing Goal',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black54,
-                                      letterSpacing: 0.2,
-                                    ),
-                                  ),
+                                  const Text('Ongoing Goal',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.black54,
+                                          letterSpacing: 0.2)),
                                   const SizedBox(height: 10),
-                                  Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      height: 1.35,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
+                                  Text(title,
+                                      style: const TextStyle(
+                                          fontSize: 20,
+                                          height: 1.35,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.black87)),
                                   const SizedBox(height: 12),
-                                  Text(
-                                    'Day $selectedDay of $totalDays',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
+                                  Text('Day $selectedDay of $totalDays',
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black54)),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    'Completed days: ${completedDays.length}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
+                                  Text('Completed days: ${completedDays.length}',
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black54)),
                                   const SizedBox(height: 16),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          Colors.white.withOpacity(0.95),
+                                      backgroundColor: Colors.white.withOpacity(0.95),
                                       foregroundColor: Colors.black87,
                                       elevation: 0,
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
+                                          horizontal: 16, vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12),
-                                      ),
+                                          borderRadius: BorderRadius.circular(12)),
                                     ),
                                     onPressed: activeGoal == null
                                         ? null
@@ -512,18 +425,12 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                                               context,
                                               MaterialPageRoute(
                                                 builder: (_) =>
-                                                    GoalProgressScreen(
-                                                  goal: activeGoal,
-                                                ),
+                                                    GoalProgressScreen(goal: activeGoal),
                                               ),
                                             );
                                           },
-                                    child: const Text(
-                                      'Continue',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                                    child: const Text('Continue',
+                                        style: TextStyle(fontWeight: FontWeight.w600)),
                                   ),
                                 ],
                               ),
