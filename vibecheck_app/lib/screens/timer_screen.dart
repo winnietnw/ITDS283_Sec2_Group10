@@ -84,9 +84,7 @@ class _TimerScreenState extends State<TimerScreen>
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               automaticallyImplyLeading: false,
-              toolbarHeight: 106,
-              collapsedHeight: 106,
-              expandedHeight: 106,
+              toolbarHeight: 112,
               flexibleSpace: const Padding(
                 padding: EdgeInsets.only(top: 10),
                 child: AppHeader(),
