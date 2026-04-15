@@ -11,7 +11,8 @@ class AnalyticsEmotionScreen extends StatefulWidget {
   const AnalyticsEmotionScreen({super.key});
 
   @override
-  State<AnalyticsEmotionScreen> createState() => _AnalyticsEmotionScreenState();
+  State<AnalyticsEmotionScreen> createState() =>
+      _AnalyticsEmotionScreenState();
 }
 
 class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
@@ -19,6 +20,10 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
   int _weekOffset = 0;
   late final AnimationController _orbitController;
   double _elapsed = 0;
+
+  // ✅ FIX: เก็บ stream ไว้ใน state ไม่สร้างใหม่ทุก build
+  late Stream<QuerySnapshot<Map<String, dynamic>>> _emotionStream =
+    const Stream.empty();
 
   @override
   void initState() {
@@ -35,6 +40,9 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
             : 0;
       });
     });
+
+    // ✅ FIX: init stream ครั้งแรก
+    _emotionStream = _buildEmotionStream(_weekOffset);
   }
 
   @override
@@ -53,6 +61,33 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
     ).add(Duration(days: offset * 7));
     final end = start.add(const Duration(days: 6, hours: 23, minutes: 59));
     return DateTimeRange(start: start, end: end);
+  }
+
+  // ✅ FIX: สร้าง stream แยกตาม week offset
+  Stream<QuerySnapshot<Map<String, dynamic>>> _buildEmotionStream(int offset) {
+    final range = _weekRange(offset);
+    final start = DateTime(range.start.year, range.start.month, range.start.day);
+    final endExclusive = start.add(const Duration(days: 7));
+
+    return FirebaseFirestore.instance
+        .collection('emotions')
+        .where('userId',
+            isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .where('time',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('time',
+            isLessThan: Timestamp.fromDate(endExclusive))
+        .snapshots();
+  }
+
+  // ✅ FIX: เปลี่ยนสัปดาห์แล้วอัปเดต stream พร้อมกัน
+  void _changeWeek(int newOffset) {
+    if (newOffset > 0) return;
+
+    setState(() {
+      _weekOffset = newOffset;
+      _emotionStream = _buildEmotionStream(_weekOffset);
+    });
   }
 
   String _weekLabel(int offset) {
@@ -190,7 +225,8 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
               final range = _weekRange(0);
               final snap = await FirebaseFirestore.instance
                   .collection('emotions')
-                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where('userId',
+                      isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                   .where(
                     'time',
                     isGreaterThanOrEqualTo: Timestamp.fromDate(range.start),
@@ -221,24 +257,16 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6FD),
       body: SafeArea(
-        child: StreamBuilder<QuerySnapshot>(
-          key: ValueKey(_weekOffset), // ✅ rebuild stream เมื่อ offset เปลี่ยน
-          stream: FirebaseFirestore.instance
-              .collection('emotions')
-              .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-              .where(
-                'time',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(range.start),
-              )
-              .where('time', isLessThanOrEqualTo: Timestamp.fromDate(range.end))
-              .snapshots(),
+        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          // ✅ FIX: ใช้ stream ที่เก็บใน state
+          stream: _emotionStream,
           builder: (context, snapshot) {
             final docs = snapshot.data?.docs ?? [];
 
             Map<String, int> count = {};
             for (var d in docs) {
               final type =
-                  (d.data() as Map<String, dynamic>)['type'] as String? ?? '';
+                  (d.data())['type'] as String? ?? '';
               count[type] = (count[type] ?? 0) + 1;
             }
 
@@ -253,12 +281,13 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
 
             int pos = 0, neg = 0, neu = 0;
             count.forEach((k, v) {
-              if (positiveSet.contains(k))
+              if (positiveSet.contains(k)) {
                 pos += v;
-              else if (negativeSet.contains(k))
+              } else if (negativeSet.contains(k)) {
                 neg += v;
-              else
+              } else {
                 neu += v;
+              }
             });
             final total = docs.length;
             final posR = total > 0 ? pos / total : 0.0;
@@ -267,8 +296,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
 
             final Set<String> days = {};
             for (var d in docs) {
-              final ts =
-                  (d.data() as Map<String, dynamic>)['time'] as Timestamp?;
+              final ts = (d.data())['time'] as Timestamp?;
               if (ts != null) {
                 final dt = ts.toDate();
                 days.add("${dt.year}-${dt.month}-${dt.day}");
@@ -290,12 +318,10 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                     child: AppHeader(),
                   ),
                 ),
-
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         padding: const EdgeInsets.all(20),
@@ -337,9 +363,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                 ),
                               ],
                             ),
-
                             const SizedBox(height: 16),
-
                             SizedBox(
                               height: 220,
                               child: ClipRRect(
@@ -353,14 +377,13 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                 ),
                               ),
                             ),
-
                             const SizedBox(height: 12),
-
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 GestureDetector(
-                                  onTap: () => setState(() => _weekOffset--),
+                                  // ✅ FIX
+                                  onTap: () => _changeWeek(_weekOffset - 1),
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
@@ -379,8 +402,8 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                   final dotOffset = -(4 - i);
                                   final isActive = dotOffset == _weekOffset;
                                   return GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _weekOffset = dotOffset),
+                                    // ✅ FIX
+                                    onTap: () => _changeWeek(dotOffset),
                                     child: Container(
                                       margin: const EdgeInsets.symmetric(
                                         horizontal: 3,
@@ -398,9 +421,10 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                 }),
                                 const SizedBox(width: 8),
                                 GestureDetector(
+                                  // ✅ FIX
                                   onTap: () {
                                     if (_weekOffset < 0) {
-                                      setState(() => _weekOffset++);
+                                      _changeWeek(_weekOffset + 1);
                                     }
                                   },
                                   child: Container(
@@ -425,9 +449,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         padding: const EdgeInsets.all(20),
@@ -446,7 +468,6 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                               ),
                             ),
                             const SizedBox(height: 16),
-
                             Row(
                               children: [
                                 Expanded(
@@ -466,9 +487,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                 ),
                               ],
                             ),
-
                             const SizedBox(height: 12),
-
                             if (mostType != "-") ...[
                               _SummaryRow(
                                 emoji: emojiMap[mostType] ?? "😊",
@@ -487,12 +506,10 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                 value: strongestScore.toStringAsFixed(1),
                               ),
                             ],
-
                             if (total > 0) ...[
                               const SizedBox(height: 12),
                               _BalanceBar(posR: posR, neuR: neuR, negR: negR),
                             ],
-
                             if (total == 0)
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 20),
@@ -567,17 +584,15 @@ class _OrbitView extends StatelessWidget {
         return Stack(
           clipBehavior: Clip.hardEdge,
           children: [
-            // orbit rings
             CustomPaint(
               size: Size(constraints.maxWidth, constraints.maxHeight),
               painter: _AllRingsPainter(
                 cx: cx,
                 cy: cy,
-                radii: radii.sublist(0, emotions.length.clamp(0, radii.length)),
+                radii:
+                    radii.sublist(0, emotions.length.clamp(0, radii.length)),
               ),
             ),
-
-            // sun
             Positioned(
               left: cx - 22,
               top: cy - 22,
@@ -600,8 +615,6 @@ class _OrbitView extends StatelessWidget {
                 ),
               ),
             ),
-
-            // planets
             for (int i = 0; i < emotions.length; i++)
               Builder(
                 builder: (_) {
@@ -642,8 +655,6 @@ class _OrbitView extends StatelessWidget {
                   );
                 },
               ),
-
-            // empty state
             if (emotions.isEmpty)
               Positioned.fill(
                 child: Align(
@@ -866,7 +877,10 @@ class _BalanceBar extends StatelessWidget {
                 "${(posR * 100).round()}% Positive",
                 const Color(0xFF388E3C),
               ),
-              _Lbl("${(neuR * 100).round()}% Neutral", const Color(0xFFF9A825)),
+              _Lbl(
+                "${(neuR * 100).round()}% Neutral",
+                const Color(0xFFF9A825),
+              ),
               _Lbl(
                 "${(negR * 100).round()}% Negative",
                 const Color(0xFFC62828),
@@ -889,7 +903,11 @@ class _Lbl extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+      style: TextStyle(
+        fontSize: 10,
+        color: color,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 }
