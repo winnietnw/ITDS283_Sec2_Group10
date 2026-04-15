@@ -19,7 +19,6 @@ class GoalProgressScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: goal.color,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: SafeArea(
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: GoalProgressService.watchCurrentGoal(),
@@ -56,262 +55,268 @@ class GoalProgressScreen extends StatelessWidget {
 
             return Stack(
               children: [
-                Column(
-                  children: [
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 110),
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: const SizedBox(
-                                  width: 40,
-                                  child: Icon(
-                                    Icons.arrow_back,
-                                    size: 24,
+                // ── Scrollable content — เว้น top 56 ให้ header ──
+                Positioned.fill(
+                  top: 56,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 110),
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      Text(
+                        goal.title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          height: 1.35,
+                          fontWeight: FontWeight.w700,
+                          color: goal.accentColor,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // ── mountain illustration ──
+                      Container(
+                        height: 220,
+                        decoration: BoxDecoration(
+                          color: goal.color,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: CustomPaint(
+                            painter: _GoalSkyPainter(),
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ── Current Progress ──
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.30),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Current Progress',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 7,
+                                backgroundColor: Colors.white.withOpacity(0.45),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  goal.accentColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Text(
+                                  'Day $selectedDay of ${goal.monthlyPlans.length}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                     color: Colors.black87,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          Text(
-                            goal.title,
-                            style: TextStyle(
-                              fontSize: 18,
-                              height: 1.35,
-                              fontWeight: FontWeight.w700,
-                              color: goal.accentColor,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          Container(
-                            height: 220,
-                            decoration: BoxDecoration(
-                              color: goal.color,
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(22),
-                              child: CustomPaint(
-                                painter: _GoalSkyPainter(),
-                                child: const SizedBox.expand(),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.30),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Current Progress',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+                                const Spacer(),
+                                Text(
+                                  '${completedDays.length} completed',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
                                     color: Colors.black54,
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: LinearProgressIndicator(
-                                    value: progress,
-                                    minHeight: 7,
-                                    backgroundColor:
-                                        Colors.white.withOpacity(0.45),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      goal.accentColor,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Day $selectedDay of ${goal.monthlyPlans.length}',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      '${completedDays.length} completed',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF6F5EA),
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Plan Template',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                SizedBox(
-                                  height: 50,
-                                  child: ScrollConfiguration(
-                                    behavior:
-                                        const MaterialScrollBehavior().copyWith(
-                                      dragDevices: {
-                                        PointerDeviceKind.touch,
-                                        PointerDeviceKind.mouse,
-                                        PointerDeviceKind.trackpad,
-                                        PointerDeviceKind.stylus,
-                                        PointerDeviceKind.unknown,
-                                      },
-                                    ),
-                                    child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      physics: const BouncingScrollPhysics(),
-                                      padding: const EdgeInsets.only(right: 8),
-                                      itemCount: goal.monthlyPlans.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(width: 8),
-                                      itemBuilder: (context, index) {
-                                        final day = index + 1;
-                                        final locked = day > unlockedUntil;
-                                        final selected = day == selectedDay;
-                                        final done = completedDays.contains(day);
-
-                                        return GestureDetector(
-                                          onTap: locked
-                                              ? null
-                                              : () => GoalProgressService
-                                                  .selectDay(day),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 180,
-                                            ),
-                                            width: 58,
-                                            decoration: BoxDecoration(
-                                              color: locked
-                                                  ? Colors.grey.shade100
-                                                  : done
-                                                      ? goal.color.withOpacity(
-                                                          0.95,
-                                                        )
-                                                      : selected
-                                                          ? goal.color
-                                                          : Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: selected
-                                                    ? goal.accentColor
-                                                    : Colors.grey.shade300,
-                                              ),
-                                              boxShadow: selected
-                                                  ? [
-                                                      BoxShadow(
-                                                        color: Colors.black
-                                                            .withOpacity(0.05),
-                                                        blurRadius: 8,
-                                                        offset: const Offset(
-                                                          0,
-                                                          3,
-                                                        ),
-                                                      ),
-                                                    ]
-                                                  : null,
-                                            ),
-                                            child: Center(
-                                              child: locked
-                                                  ? Icon(
-                                                      Icons.lock_outline,
-                                                      size: 18,
-                                                      color:
-                                                          Colors.grey.shade500,
-                                                    )
-                                                  : done
-                                                      ? Icon(
-                                                          Icons.check,
-                                                          size: 18,
-                                                          color:
-                                                              goal.accentColor,
-                                                        )
-                                                      : Text(
-                                                          'Day\n$day',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: TextStyle(
-                                                            fontSize: 11,
-                                                            height: 1.2,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            color: goal
-                                                                .accentColor,
-                                                          ),
-                                                        ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 16),
-
-                                _GuideCard(
-                                  stripColor: const Color(0xFFF05A5A),
-                                  title: currentPlan.title,
-                                  subtitle: currentPlan.subtitle,
-                                  tasks: currentPlan.tasks,
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                ..._buildUpcomingGuideCards(
-                                  plans: goal.monthlyPlans,
-                                  selectedDay: selectedDay,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 16),
+
+                      // ── Plan Template ──
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF6F5EA),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Plan Template',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            SizedBox(
+                              height: 50,
+                              child: ScrollConfiguration(
+                                behavior:
+                                    const MaterialScrollBehavior().copyWith(
+                                  dragDevices: {
+                                    PointerDeviceKind.touch,
+                                    PointerDeviceKind.mouse,
+                                    PointerDeviceKind.trackpad,
+                                    PointerDeviceKind.stylus,
+                                    PointerDeviceKind.unknown,
+                                  },
+                                ),
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.only(right: 8),
+                                  itemCount: goal.monthlyPlans.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 8),
+                                  itemBuilder: (context, index) {
+                                    final day = index + 1;
+                                    final locked = day > unlockedUntil;
+                                    final selected = day == selectedDay;
+                                    final done = completedDays.contains(day);
+
+                                    return GestureDetector(
+                                      onTap: locked
+                                          ? null
+                                          : () => GoalProgressService
+                                              .selectDay(day),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        width: 58,
+                                        decoration: BoxDecoration(
+                                          color: locked
+                                              ? Colors.grey.shade100
+                                              : done
+                                                  ? goal.color
+                                                      .withOpacity(0.95)
+                                                  : selected
+                                                      ? goal.color
+                                                      : Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: selected
+                                                ? goal.accentColor
+                                                : Colors.grey.shade300,
+                                          ),
+                                          boxShadow: selected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.05),
+                                                    blurRadius: 8,
+                                                    offset:
+                                                        const Offset(0, 3),
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Center(
+                                          child: locked
+                                              ? Icon(
+                                                  Icons.lock_outline,
+                                                  size: 18,
+                                                  color: Colors.grey.shade500,
+                                                )
+                                              : done
+                                                  ? Icon(
+                                                      Icons.check,
+                                                      size: 18,
+                                                      color: goal.accentColor,
+                                                    )
+                                                  : Text(
+                                                      'Day\n$day',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        height: 1.2,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: goal.accentColor,
+                                                      ),
+                                                    ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _GuideCard(
+                              stripColor: const Color(0xFFF05A5A),
+                              title: currentPlan.title,
+                              subtitle: currentPlan.subtitle,
+                              tasks: currentPlan.tasks,
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            ..._buildUpcomingGuideCards(
+                              plans: goal.monthlyPlans,
+                              selectedDay: selectedDay,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
+                // ── Fixed header ──
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 56,
+                    color: goal.color,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              Icons.arrow_back,
+                              size: 24,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // ── FAB bottom button ──
                 Positioned(
                   left: 0,
                   right: 0,
@@ -472,7 +477,6 @@ class _GoalSkyPainter extends CustomPainter {
     canvas.drawCircle(moonCenter, 16, moonPaint);
 
     final Random rand = Random(77);
-
     for (int i = 0; i < 38; i++) {
       final double dx = rand.nextDouble() * size.width;
       final double dy = rand.nextDouble() * (size.height * 0.48);
@@ -481,7 +485,6 @@ class _GoalSkyPainter extends CustomPainter {
       final Paint glow = Paint()
         ..color = Colors.white.withOpacity(0.10)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
       final Paint star = Paint()..color = Colors.white.withOpacity(0.92);
 
       canvas.drawCircle(Offset(dx, dy), r + 2, glow);
@@ -493,7 +496,6 @@ class _GoalSkyPainter extends CustomPainter {
         ..color = Colors.white.withOpacity(0.95)
         ..strokeWidth = 1.4
         ..strokeCap = StrokeCap.round;
-
       canvas.drawLine(Offset(c.dx - s, c.dy), Offset(c.dx + s, c.dy), p);
       canvas.drawLine(Offset(c.dx, c.dy - s), Offset(c.dx, c.dy + s), p);
     }
@@ -532,7 +534,6 @@ class _GoalSkyPainter extends CustomPainter {
     canvas.drawPath(frontPath, frontMountain);
 
     final Paint snowPaint = Paint()..color = const Color(0xFFF7FBFF);
-
     final Path cap1 = Path()
       ..moveTo(size.width * 0.34, size.height * 0.52)
       ..lineTo(size.width * 0.38, size.height * 0.46)
@@ -540,7 +541,6 @@ class _GoalSkyPainter extends CustomPainter {
       ..lineTo(size.width * 0.39, size.height * 0.51)
       ..lineTo(size.width * 0.37, size.height * 0.55)
       ..close();
-
     final Path cap2 = Path()
       ..moveTo(size.width * 0.64, size.height * 0.46)
       ..lineTo(size.width * 0.68, size.height * 0.40)
@@ -548,7 +548,6 @@ class _GoalSkyPainter extends CustomPainter {
       ..lineTo(size.width * 0.69, size.height * 0.45)
       ..lineTo(size.width * 0.67, size.height * 0.49)
       ..close();
-
     canvas.drawPath(cap1, snowPaint);
     canvas.drawPath(cap2, snowPaint);
 
@@ -564,7 +563,6 @@ class _GoalSkyPainter extends CustomPainter {
 
     void drawFlag(double x, double y) {
       canvas.drawLine(Offset(x, y), Offset(x, y - 20), polePaint);
-
       final Path flag = Path()
         ..moveTo(x, y - 20)
         ..lineTo(x + 12, y - 20)
@@ -572,10 +570,7 @@ class _GoalSkyPainter extends CustomPainter {
         ..lineTo(x + 12, y - 8)
         ..lineTo(x, y - 8)
         ..close();
-
-      final Paint flagPaint = Paint()..color = const Color(0xFFFF6B6B);
-
-      canvas.drawPath(flag, flagPaint);
+      canvas.drawPath(flag, Paint()..color = const Color(0xFFFF6B6B));
     }
 
     drawFlag(size.width * 0.12, size.height * 0.56);
