@@ -8,6 +8,7 @@ import '../widgets/bottom_nav_bar.dart';
 import '../data/goal_templates.dart';
 import '../screens/goal_progress_screen.dart';
 import '../services/goal_progress_service.dart';
+import '../services/weather_service.dart';
 
 class EmotionData {
   final String type;
@@ -43,6 +44,9 @@ class _HomeScreenState extends State<HomeScreen>
   late final AnimationController _orbitController;
   double _elapsed = 0.0;
 
+  WeatherData? _weather;
+  bool _weatherLoaded = false;
+
   static const Map<String, String> _emojiMap = {
     "happy": "😊",
     "calm": "😌",
@@ -71,6 +75,18 @@ class _HomeScreenState extends State<HomeScreen>
         _elapsed = elapsed == null ? 0.0 : elapsed.inMilliseconds / 1000.0;
       });
     });
+
+    _loadWeather();
+  }
+
+  Future<void> _loadWeather() async {
+    final data = await WeatherService.fetchWeather();
+    if (mounted) {
+      setState(() {
+        _weather = data;
+        _weatherLoaded = true;
+      });
+    }
   }
 
   @override
@@ -187,9 +203,13 @@ class _HomeScreenState extends State<HomeScreen>
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('emotions')
-              .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-              .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(weekRange.start))
-              .where('time', isLessThanOrEqualTo: Timestamp.fromDate(weekRange.end))
+              .where('userId',
+                  isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+              .where('time',
+                  isGreaterThanOrEqualTo:
+                      Timestamp.fromDate(weekRange.start))
+              .where('time',
+                  isLessThanOrEqualTo: Timestamp.fromDate(weekRange.end))
               .snapshots(),
           builder: (context, emotionSnapshot) {
             final emotionDocs = emotionSnapshot.data?.docs ?? [];
@@ -219,27 +239,38 @@ class _HomeScreenState extends State<HomeScreen>
               else neutral += value;
             });
 
-            final positivePct = total == 0 ? 0 : ((positive / total) * 100).round();
-            final neutralPct  = total == 0 ? 0 : ((neutral  / total) * 100).round();
-            final negativePct = total == 0 ? 0 : ((negative / total) * 100).round();
+            final positivePct =
+                total == 0 ? 0 : ((positive / total) * 100).round();
+            final neutralPct =
+                total == 0 ? 0 : ((neutral / total) * 100).round();
+            final negativePct =
+                total == 0 ? 0 : ((negative / total) * 100).round();
 
-            final mostType  = sorted.isNotEmpty ? sorted.first.key : 'neutral';
+            final mostType =
+                sorted.isNotEmpty ? sorted.first.key : 'neutral';
             final mostEmoji = _emojiMap[mostType] ?? "😐";
 
             return StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('tasks')
-                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where('userId',
+                      isEqualTo:
+                          FirebaseAuth.instance.currentUser?.uid)
                   .orderBy('createdAt', descending: false)
                   .snapshots(),
               builder: (context, taskSnapshot) {
                 final taskDocs = taskSnapshot.data?.docs ?? [];
 
                 final tasks = taskDocs.map((doc) {
-                  final data = (doc.data() as Map<String, dynamic>? ?? {});
+                  final data =
+                      (doc.data() as Map<String, dynamic>? ?? {});
                   return TaskData(
                     id: doc.id,
-                    title: (data['title']?.toString().trim().isNotEmpty ?? false)
+                    title: (data['title']
+                                    ?.toString()
+                                    .trim()
+                                    .isNotEmpty ??
+                                false)
                         ? data['title'].toString()
                         : 'Untitled Task',
                     done: data['isCompleted'] == true,
@@ -247,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen>
                 }).toList();
 
                 final todoTasks = tasks.where((t) => !t.done).toList();
-                final doneTasks = tasks.where((t) =>  t.done).toList();
+                final doneTasks = tasks.where((t) => t.done).toList();
 
                 return CustomScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -270,6 +301,66 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Column(
                         children: [
                           const SizedBox(height: 10),
+
+                          // ── Weather Card ──
+                          if (_weatherLoaded && _weather != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  22, 0, 22, 14),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius:
+                                      BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black
+                                          .withOpacity(0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      _weather!.emoji,
+                                      style: const TextStyle(
+                                          fontSize: 28),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${_weather!.city}  ·  ${_weather!.tempCelsius.round()}°C',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight:
+                                                  FontWeight.w700,
+                                              color: Color(0xFF273142),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _weather!.description,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF8D8D8D),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                           const Text(
                             "Your Emotional Galaxy",
                             style: TextStyle(
@@ -291,7 +382,8 @@ class _HomeScreenState extends State<HomeScreen>
 
                           // ── ORBIT ──
                           Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 22),
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 22),
                             width: double.infinity,
                             height: 260,
                             decoration: BoxDecoration(
@@ -311,14 +403,16 @@ class _HomeScreenState extends State<HomeScreen>
 
                           // ── GALAXY SUMMARY ──
                           Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 22),
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 22),
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
+                                  color:
+                                      Colors.black.withOpacity(0.04),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -328,12 +422,14 @@ class _HomeScreenState extends State<HomeScreen>
                               children: [
                                 GestureDetector(
                                   onTap: () {
-                                    MainNavigation.navKey.currentState?.switchTab(3);
+                                    MainNavigation.navKey.currentState
+                                        ?.switchTab(3);
                                   },
                                   child: Row(
                                     children: const [
                                       Icon(Icons.bar_chart_rounded,
-                                          size: 16, color: Color(0xFFD7B8FF)),
+                                          size: 16,
+                                          color: Color(0xFFD7B8FF)),
                                       SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -346,7 +442,8 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       ),
                                       Icon(Icons.chevron_right,
-                                          size: 20, color: Color(0xFF273142)),
+                                          size: 20,
+                                          color: Color(0xFF273142)),
                                     ],
                                   ),
                                 ),
@@ -396,21 +493,24 @@ class _HomeScreenState extends State<HomeScreen>
 
                           // ── TO-DO ──
                           Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 22),
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 22),
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
+                                  color:
+                                      Colors.black.withOpacity(0.04),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
@@ -426,13 +526,17 @@ class _HomeScreenState extends State<HomeScreen>
                                     ),
                                     GestureDetector(
                                       onTap: () {
-                                        MainNavigation.navKey.currentState?.switchTab(1);
+                                        MainNavigation
+                                            .navKey.currentState
+                                            ?.switchTab(1);
                                       },
                                       child: const SizedBox(
                                         width: 28,
                                         height: 28,
-                                        child: Icon(Icons.chevron_right,
-                                            size: 20, color: Color(0xFF273142)),
+                                        child: Icon(
+                                            Icons.chevron_right,
+                                            size: 20,
+                                            color: Color(0xFF273142)),
                                       ),
                                     ),
                                   ],
@@ -447,22 +551,26 @@ class _HomeScreenState extends State<HomeScreen>
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                if (todoTasks.isEmpty && doneTasks.isEmpty)
+                                if (todoTasks.isEmpty &&
+                                    doneTasks.isEmpty)
                                   const _NoPlanBox()
                                 else ...[
                                   if (todoTasks.isEmpty)
                                     const _NoPlanBox()
                                   else
                                     ...todoTasks.take(3).map(
-                                      (task) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
-                                        child: _TaskRow(
-                                          title: task.title,
-                                          done: false,
-                                          onTap: () => _toggleTask(task),
+                                          (task) => Padding(
+                                            padding:
+                                                const EdgeInsets.only(
+                                                    bottom: 8),
+                                            child: _TaskRow(
+                                              title: task.title,
+                                              done: false,
+                                              onTap: () =>
+                                                  _toggleTask(task),
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
                                   const SizedBox(height: 10),
                                   const Text(
                                     "Completed",
@@ -474,18 +582,22 @@ class _HomeScreenState extends State<HomeScreen>
                                   ),
                                   const SizedBox(height: 10),
                                   if (doneTasks.isEmpty)
-                                    const _NoPlanBox(text: "No completed plan")
+                                    const _NoPlanBox(
+                                        text: "No completed plan")
                                   else
                                     ...doneTasks.take(2).map(
-                                      (task) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
-                                        child: _TaskRow(
-                                          title: task.title,
-                                          done: true,
-                                          onTap: () => _toggleTask(task),
+                                          (task) => Padding(
+                                            padding:
+                                                const EdgeInsets.only(
+                                                    bottom: 8),
+                                            child: _TaskRow(
+                                              title: task.title,
+                                              done: true,
+                                              onTap: () =>
+                                                  _toggleTask(task),
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
                                 ],
                               ],
                             ),
@@ -493,23 +605,27 @@ class _HomeScreenState extends State<HomeScreen>
 
                           const SizedBox(height: 18),
 
-                          // ── GOAL PROGRESS CARD ── (ใหม่!)
-                          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                            stream: GoalProgressService.watchCurrentGoal(),
+                          // ── GOAL PROGRESS CARD ──
+                          StreamBuilder
+                              <DocumentSnapshot<Map<String, dynamic>>>(
+                            stream:
+                                GoalProgressService.watchCurrentGoal(),
                             builder: (context, goalSnap) {
                               final data = goalSnap.data?.data();
 
-                              // ไม่มี goal ที่กำลังทำอยู่
                               if (data == null) {
                                 return Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 22),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 22),
                                   padding: const EdgeInsets.all(18),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius:
+                                        BorderRadius.circular(18),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.04),
+                                        color: Colors.black
+                                            .withOpacity(0.04),
                                         blurRadius: 10,
                                         offset: const Offset(0, 4),
                                       ),
@@ -521,24 +637,31 @@ class _HomeScreenState extends State<HomeScreen>
                                         width: 42,
                                         height: 42,
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFF0EBFF),
-                                          borderRadius: BorderRadius.circular(12),
+                                          color:
+                                              const Color(0xFFF0EBFF),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: const Center(
-                                          child: Text("🎯", style: TextStyle(fontSize: 20)),
+                                          child: Text("🎯",
+                                              style: TextStyle(
+                                                  fontSize: 20)),
                                         ),
                                       ),
                                       const SizedBox(width: 14),
                                       const Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               "No Active Goal",
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: Color(0xFF273142),
+                                                fontWeight:
+                                                    FontWeight.w700,
+                                                color:
+                                                    Color(0xFF273142),
                                               ),
                                             ),
                                             SizedBox(height: 2),
@@ -553,13 +676,20 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       ),
                                       GestureDetector(
-                                        onTap: () => Navigator.pushNamed(context, '/settings'),
+                                        onTap: () =>
+                                            Navigator.pushNamed(
+                                                context, '/settings'),
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 7),
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 7),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFF0EBFF),
-                                            borderRadius: BorderRadius.circular(10),
+                                            color:
+                                                const Color(0xFFF0EBFF),
+                                            borderRadius:
+                                                BorderRadius.circular(
+                                                    10),
                                           ),
                                           child: const Text(
                                             "Set Goal",
@@ -576,23 +706,31 @@ class _HomeScreenState extends State<HomeScreen>
                                 );
                               }
 
-                              // มี goal อยู่ → แสดง progress
-                              final goalId       = data['goalId']?.toString() ?? '';
-                              final title        = data['title']?.toString() ?? 'Goal';
-                              final colorValue   = data['colorValue'] as int? ?? 0xFFE9D9A8;
-                              final accentValue  = data['accentColorValue'] as int? ?? 0xFF7B5EA7;
-                              final selectedDay  = data['selectedDay'] as int? ?? 1;
-                              final totalDays    = data['totalDays'] as int? ?? 30;
-                              final completedDays =
-                                  (data['completedDays'] as List<dynamic>? ?? [])
-                                      .map((e) => e as int)
-                                      .toList();
+                              final goalId =
+                                  data['goalId']?.toString() ?? '';
+                              final title =
+                                  data['title']?.toString() ?? 'Goal';
+                              final colorValue =
+                                  data['colorValue'] as int? ??
+                                      0xFFE9D9A8;
+                              final accentValue =
+                                  data['accentColorValue'] as int? ??
+                                      0xFF7B5EA7;
+                              final selectedDay =
+                                  data['selectedDay'] as int? ?? 1;
+                              final totalDays =
+                                  data['totalDays'] as int? ?? 30;
+                              final completedDays = (data['completedDays']
+                                          as List<dynamic>? ??
+                                      [])
+                                  .map((e) => e as int)
+                                  .toList();
                               final progress = totalDays == 0
                                   ? 0.0
                                   : completedDays.length / totalDays;
-                              final accentColor  = Color(accentValue);
-                              final bgColor      = Color(colorValue);
-                              final activeGoal   = _findGoalById(goalId);
+                              final accentColor = Color(accentValue);
+                              final bgColor = Color(colorValue);
+                              final activeGoal = _findGoalById(goalId);
 
                               return GestureDetector(
                                 onTap: activeGoal == null
@@ -602,56 +740,56 @@ class _HomeScreenState extends State<HomeScreen>
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) =>
-                                                GoalProgressScreen(goal: activeGoal),
+                                                GoalProgressScreen(
+                                                    goal: activeGoal),
                                           ),
                                         );
                                       },
                                 child: Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 22),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 22),
                                   padding: const EdgeInsets.all(18),
                                   decoration: BoxDecoration(
                                     color: bgColor,
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius:
+                                        BorderRadius.circular(18),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.06),
+                                        color: Colors.black
+                                            .withOpacity(0.06),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4),
                                       ),
                                     ],
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      // header row
                                       Row(
-                                        children: [
-                                          const Text(
-                                            "🎯",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          const Expanded(
+                                        children: const [
+                                          Text("🎯",
+                                              style: TextStyle(
+                                                  fontSize: 16)),
+                                          SizedBox(width: 8),
+                                          Expanded(
                                             child: Text(
                                               "Ongoing Goal",
                                               style: TextStyle(
                                                 fontSize: 12,
-                                                fontWeight: FontWeight.w700,
+                                                fontWeight:
+                                                    FontWeight.w700,
                                                 color: Colors.black54,
                                                 letterSpacing: 0.2,
                                               ),
                                             ),
                                           ),
-                                          const Icon(
-                                            Icons.chevron_right,
-                                            size: 18,
-                                            color: Colors.black45,
-                                          ),
+                                          Icon(Icons.chevron_right,
+                                              size: 18,
+                                              color: Colors.black45),
                                         ],
                                       ),
                                       const SizedBox(height: 8),
-
-                                      // goal title
                                       Text(
                                         title,
                                         style: TextStyle(
@@ -662,20 +800,20 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-
-                                      // progress bar
                                       ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
                                         child: LinearProgressIndicator(
                                           value: progress,
                                           minHeight: 7,
-                                          backgroundColor: Colors.white.withOpacity(0.45),
-                                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                                          backgroundColor: Colors.white
+                                              .withOpacity(0.45),
+                                          valueColor:
+                                              AlwaysStoppedAnimation
+                                                  <Color>(accentColor),
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-
-                                      // day info
                                       Row(
                                         children: [
                                           Text(
@@ -688,8 +826,7 @@ class _HomeScreenState extends State<HomeScreen>
                                           ),
                                           const Spacer(),
                                           Text(
-                                            "${completedDays.length} days done  "
-                                            "(${(progress * 100).round()}%)",
+                                            "${completedDays.length} days done  (${(progress * 100).round()}%)",
                                             style: const TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
@@ -731,7 +868,7 @@ class _OrbitView extends StatelessWidget {
 
   static const Map<String, String> emojiMap = {
     "happy": "😊", "calm": "😌", "neutral": "😐", "stressed": "😰",
-    "love": "🥰",  "burnout": "🫠","angry": "😡",  "sad": "😭",
+    "love": "🥰", "burnout": "🫠", "angry": "😡", "sad": "😭",
   };
 
   @override
@@ -743,7 +880,7 @@ class _OrbitView extends StatelessWidget {
         final double maxCount =
             emotions.isNotEmpty ? emotions.first.value.toDouble() : 1.0;
 
-        const List<double> radii  = [40, 58, 74, 88, 100, 112, 122, 130];
+        const List<double> radii = [40, 58, 74, 88, 100, 112, 122, 130];
         const List<double> speeds = [0.8, 0.55, 0.38, 0.28, 0.22, 0.17, 0.13, 0.10];
         const List<double> phases = [0.0, 1.0, 2.1, 0.5, 1.8, 3.0, 0.9, 2.5];
 
@@ -755,7 +892,8 @@ class _OrbitView extends StatelessWidget {
           children: [
             CustomPaint(
               size: Size(constraints.maxWidth, constraints.maxHeight),
-              painter: _AllRingsPainter(cx: cx, cy: cy, radii: visibleRadii),
+              painter:
+                  _AllRingsPainter(cx: cx, cy: cy, radii: visibleRadii),
             ),
             Positioned(
               left: cx - 20,
@@ -782,11 +920,13 @@ class _OrbitView extends StatelessWidget {
             for (int i = 0; i < emotions.length && i < radii.length; i++)
               Builder(
                 builder: (_) {
-                  final entry  = emotions[i];
-                  final double ratio = maxCount == 0 ? 0.0 : entry.value / maxCount;
-                  final double size  = 24.0 + (ratio * 18.0);
-                  final double angle = (elapsed * speeds[i]) + phases[i];
-                  final double r  = radii[i];
+                  final entry = emotions[i];
+                  final double ratio =
+                      maxCount == 0 ? 0.0 : entry.value / maxCount;
+                  final double size = 24.0 + (ratio * 18.0);
+                  final double angle =
+                      (elapsed * speeds[i]) + phases[i];
+                  final double r = radii[i];
                   final double px = cx + r * math.cos(angle) - size / 2;
                   final double py = cy + r * math.sin(angle) - size / 2;
                   final color = EmotionColors.get(entry.key);
@@ -810,7 +950,8 @@ class _OrbitView extends StatelessWidget {
                         ],
                       ),
                       child: Center(
-                        child: Text(emoji, style: TextStyle(fontSize: size * 0.42)),
+                        child: Text(emoji,
+                            style: TextStyle(fontSize: size * 0.42)),
                       ),
                     ),
                   );
@@ -822,7 +963,8 @@ class _OrbitView extends StatelessWidget {
                   alignment: const Alignment(0, 0.72),
                   child: Text(
                     "No emotions this week",
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                    style: TextStyle(
+                        color: Colors.grey.shade400, fontSize: 12),
                   ),
                 ),
               ),
@@ -837,7 +979,8 @@ class _AllRingsPainter extends CustomPainter {
   final double cx, cy;
   final List<double> radii;
 
-  const _AllRingsPainter({required this.cx, required this.cy, required this.radii});
+  const _AllRingsPainter(
+      {required this.cx, required this.cy, required this.radii});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -863,26 +1006,29 @@ class _HomeStatBox extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _HomeStatBox({required this.value, required this.label, required this.color});
+  const _HomeStatBox(
+      {required this.value, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 72,
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(14),
-      ),
+          color: color, borderRadius: BorderRadius.circular(14)),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(value,
               style: const TextStyle(
-                  fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF273142))),
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF273142))),
           const SizedBox(height: 4),
           Text(label,
               style: const TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF8D8D8D))),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF8D8D8D))),
         ],
       ),
     );
@@ -894,7 +1040,8 @@ class _SummaryLine extends StatelessWidget {
   final int value;
   final Color color;
 
-  const _SummaryLine({required this.label, required this.value, required this.color});
+  const _SummaryLine(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -905,7 +1052,9 @@ class _SummaryLine extends StatelessWidget {
           width: 108,
           child: Text(label,
               style: const TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF6D6D6D))),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF6D6D6D))),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -925,7 +1074,9 @@ class _SummaryLine extends StatelessWidget {
           child: Text("$value%",
               textAlign: TextAlign.right,
               style: const TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6D6D6D))),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF6D6D6D))),
         ),
       ],
     );
@@ -937,7 +1088,8 @@ class _TaskRow extends StatelessWidget {
   final bool done;
   final VoidCallback onTap;
 
-  const _TaskRow({required this.title, required this.done, required this.onTap});
+  const _TaskRow(
+      {required this.title, required this.done, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -956,7 +1108,9 @@ class _TaskRow extends StatelessWidget {
             Icon(
               done ? Icons.check_box : Icons.check_box_outline_blank,
               size: 18,
-              color: done ? const Color(0xFF7EDB95) : const Color(0xFFC5C5C5),
+              color: done
+                  ? const Color(0xFF7EDB95)
+                  : const Color(0xFFC5C5C5),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -991,11 +1145,11 @@ class _NoPlanBox extends StatelessWidget {
         color: const Color(0xFFF7F7F7),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF9A9A9A)),
-      ),
+      child: Text(text,
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF9A9A9A))),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
 import 'analytics_emotion_screen.dart';
+import '../services/weather_service.dart';
 
 class EmotionScreen extends StatefulWidget {
   const EmotionScreen({super.key});
@@ -68,10 +69,15 @@ class _EmotionScreenState extends State<EmotionScreen> {
   Future<void> saveEmotion() async {
     if (selected.isEmpty) return;
 
+    final weather = await WeatherService.fetchWeather();
+
     await FirebaseFirestore.instance.collection('emotions').add({
       "type": selected,
       "time": Timestamp.now(),
       "userId": FirebaseAuth.instance.currentUser?.uid,
+      "weatherCondition": weather?.condition,
+      "weatherTemp": weather?.tempCelsius,
+      "weatherCity": weather?.city,
     });
 
     if (!mounted) return;

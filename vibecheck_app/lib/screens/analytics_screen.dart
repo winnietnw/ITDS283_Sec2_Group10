@@ -50,76 +50,94 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final lastEmotionSnap = await FirebaseFirestore.instance
         .collection('emotions')
         .where('userId', isEqualTo: uid)
-        .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(lastRangeStart))
+        .where('time',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(lastRangeStart))
         .where('time', isLessThan: Timestamp.fromDate(lastRangeEnd))
         .get();
 
     final taskSnap = await FirebaseFirestore.instance
         .collection('tasks')
         .where('userId', isEqualTo: uid)
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(rangeStart))
+        .where('createdAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(rangeStart))
         .get();
 
     final lastTaskSnap = await FirebaseFirestore.instance
         .collection('tasks')
         .where('userId', isEqualTo: uid)
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(lastRangeStart))
+        .where('createdAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(lastRangeStart))
         .where('createdAt', isLessThan: Timestamp.fromDate(lastRangeEnd))
         .get();
 
     final sessionSnap = await FirebaseFirestore.instance
         .collection('timer_sessions')
         .where('userId', isEqualTo: uid)
-        .where('completedAt', isGreaterThanOrEqualTo: Timestamp.fromDate(rangeStart))
+        .where('completedAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(rangeStart))
         .get();
 
     final lastSessionSnap = await FirebaseFirestore.instance
         .collection('timer_sessions')
         .where('userId', isEqualTo: uid)
-        .where('completedAt', isGreaterThanOrEqualTo: Timestamp.fromDate(lastRangeStart))
+        .where('completedAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(lastRangeStart))
         .where('completedAt', isLessThan: Timestamp.fromDate(lastRangeEnd))
         .get();
 
-    // ══════════════════════════════════════════
-    // วิเคราะห์ข้อมูล
-    // ══════════════════════════════════════════
     final emotions = emotionSnap.docs.map((d) => d.data()).toList();
     final lastEmotions = lastEmotionSnap.docs.map((d) => d.data()).toList();
     final tasks = taskSnap.docs.map((d) => d.data()).toList();
     final lastTasks = lastTaskSnap.docs.map((d) => d.data()).toList();
     final sessions = sessionSnap.docs.map((d) => d.data()).toList();
-    final lastSessions = lastSessionSnap.docs.map((d) => d.data()).toList();
+    final lastSessions =
+        lastSessionSnap.docs.map((d) => d.data()).toList();
 
     const positiveSet = {'happy', 'calm', 'love'};
     const negativeSet = {'angry', 'sad', 'burnout'};
 
     // tasks
-    final completedTasks = tasks.where((t) => t['isCompleted'] == true).length;
-    final lastCompletedTasks = lastTasks.where((t) => t['isCompleted'] == true).length;
+    final completedTasks =
+        tasks.where((t) => t['isCompleted'] == true).length;
+    final lastCompletedTasks =
+        lastTasks.where((t) => t['isCompleted'] == true).length;
     final taskDiff = lastCompletedTasks == 0
         ? (completedTasks > 0 ? 100 : 0)
-        : (((completedTasks - lastCompletedTasks) / lastCompletedTasks) * 100).round();
+        : (((completedTasks - lastCompletedTasks) / lastCompletedTasks) * 100)
+            .round();
 
     // focus time
-    final totalMinutes = sessions.fold<int>(0, (s, e) => s + ((e['minutes'] as int?) ?? 0));
-    final lastTotalMinutes = lastSessions.fold<int>(0, (s, e) => s + ((e['minutes'] as int?) ?? 0));
+    final totalMinutes = sessions.fold<int>(
+        0, (s, e) => s + ((e['minutes'] as int?) ?? 0));
+    final lastTotalMinutes = lastSessions.fold<int>(
+        0, (s, e) => s + ((e['minutes'] as int?) ?? 0));
     final focusHours = totalMinutes / 60;
     final focusDiff = lastTotalMinutes == 0
         ? (totalMinutes > 0 ? 100 : 0)
-        : (((totalMinutes - lastTotalMinutes) / lastTotalMinutes) * 100).round();
+        : (((totalMinutes - lastTotalMinutes) / lastTotalMinutes) * 100)
+            .round();
 
     // avg productivity
     final totalTasks = tasks.length;
-    final avgProductivity = totalTasks == 0 ? 0.0 : (completedTasks / totalTasks) * 10;
+    final avgProductivity =
+        totalTasks == 0 ? 0.0 : (completedTasks / totalTasks) * 10;
     final lastTotalTasks = lastTasks.length;
-    final lastAvgProductivity = lastTotalTasks == 0 ? 0.0 : (lastCompletedTasks / lastTotalTasks) * 10;
+    final lastAvgProductivity = lastTotalTasks == 0
+        ? 0.0
+        : (lastCompletedTasks / lastTotalTasks) * 10;
     final productivityDiff = lastAvgProductivity == 0
         ? (avgProductivity > 0 ? 100 : 0)
-        : (((avgProductivity - lastAvgProductivity) / lastAvgProductivity) * 100).round();
+        : (((avgProductivity - lastAvgProductivity) / lastAvgProductivity) *
+                100)
+            .round();
 
     // goal achievement
-    final goalAchievement = totalTasks == 0 ? 0 : ((completedTasks / totalTasks) * 100).round();
-    final lastGoalAchievement = lastTotalTasks == 0 ? 0 : ((lastCompletedTasks / lastTotalTasks) * 100).round();
+    final goalAchievement = totalTasks == 0
+        ? 0
+        : ((completedTasks / totalTasks) * 100).round();
+    final lastGoalAchievement = lastTotalTasks == 0
+        ? 0
+        : ((lastCompletedTasks / lastTotalTasks) * 100).round();
     final goalDiff = goalAchievement - lastGoalAchievement;
 
     // emotion count
@@ -132,13 +150,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     String mostCommonMood = 'neutral';
     int mostCommonCount = 0;
     emotionCount.forEach((k, v) {
-      if (v > mostCommonCount) { mostCommonCount = v; mostCommonMood = k; }
+      if (v > mostCommonCount) {
+        mostCommonCount = v;
+        mostCommonMood = k;
+      }
     });
 
-    // ── Productivity chart (tasks completed per day/week) ──
+    // chart spots
     List<FlSpot> chartSpots = [];
     if (period == 'Week') {
-      final Map<int, int> tasksByDay = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
+      final Map<int, int> tasksByDay = {
+        0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0
+      };
       for (final t in tasks) {
         if (t['isCompleted'] != true) continue;
         final createdAt = (t['createdAt'] as Timestamp?)?.toDate();
@@ -165,8 +188,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       }
     }
 
-    // ── Pearson Correlation (mood score vs tasks completed per day) ──
-    // สร้าง paired data ต่อวัน
+    // Pearson Correlation
     final Map<String, double> moodScoreByDay = {};
     final Map<String, int> tasksByDayAll = {};
 
@@ -175,8 +197,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (time == null) continue;
       final key = '${time.year}-${time.month}-${time.day}';
       final type = e['type'] as String? ?? 'neutral';
-      final score = positiveSet.contains(type) ? 3.0 : negativeSet.contains(type) ? 1.0 : 2.0;
-      // เฉลี่ย mood ต่อวัน
+      final score =
+          positiveSet.contains(type) ? 3.0 : negativeSet.contains(type) ? 1.0 : 2.0;
       if (moodScoreByDay.containsKey(key)) {
         moodScoreByDay[key] = (moodScoreByDay[key]! + score) / 2;
       } else {
@@ -188,11 +210,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (t['isCompleted'] != true) continue;
       final createdAt = (t['createdAt'] as Timestamp?)?.toDate();
       if (createdAt == null) continue;
-      final key = '${createdAt.year}-${createdAt.month}-${createdAt.day}';
+      final key =
+          '${createdAt.year}-${createdAt.month}-${createdAt.day}';
       tasksByDayAll[key] = (tasksByDayAll[key] ?? 0) + 1;
     }
 
-    // หา days ที่มีทั้ง mood และ task data
     final commonDays = moodScoreByDay.keys
         .where((k) => tasksByDayAll.containsKey(k))
         .toList();
@@ -200,11 +222,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     double pearsonR = 0;
     if (commonDays.length >= 2) {
       final xList = commonDays.map((k) => moodScoreByDay[k]!).toList();
-      final yList = commonDays.map((k) => tasksByDayAll[k]!.toDouble()).toList();
+      final yList =
+          commonDays.map((k) => tasksByDayAll[k]!.toDouble()).toList();
       pearsonR = _pearson(xList, yList);
     }
 
-    // ── Most productive mood ──
+    // Most productive mood
     final Map<String, int> moodTaskCompletion = {};
     for (final t in tasks) {
       if (t['isCompleted'] != true) continue;
@@ -226,31 +249,71 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     String mostProductiveMood = mostCommonMood;
     int bestMoodCount = 0;
     moodTaskCompletion.forEach((k, v) {
-      if (v > bestMoodCount) { bestMoodCount = v; mostProductiveMood = k; }
+      if (v > bestMoodCount) {
+        bestMoodCount = v;
+        mostProductiveMood = k;
+      }
     });
 
     final moodTotal = emotionCount[mostProductiveMood] ?? 1;
     final moodProductivityRate =
-        ((moodTaskCompletion[mostProductiveMood] ?? 0) / moodTotal * 100).round().clamp(0, 100);
+        ((moodTaskCompletion[mostProductiveMood] ?? 0) / moodTotal * 100)
+            .round()
+            .clamp(0, 100);
 
-    // ── Peak time ──
+    // Peak time
     final Map<int, int> minutesByHour = {};
     for (final s in sessions) {
       final completedAt = (s['completedAt'] as Timestamp?)?.toDate();
       if (completedAt == null) continue;
       final hour = completedAt.hour;
-      minutesByHour[hour] = (minutesByHour[hour] ?? 0) + ((s['minutes'] as int?) ?? 0);
+      minutesByHour[hour] =
+          (minutesByHour[hour] ?? 0) + ((s['minutes'] as int?) ?? 0);
     }
     int peakHour = 9;
     int peakMinutes = 0;
     minutesByHour.forEach((h, m) {
-      if (m > peakMinutes) { peakMinutes = m; peakHour = h; }
+      if (m > peakMinutes) {
+        peakMinutes = m;
+        peakHour = h;
+      }
     });
-    final peakStart = '${peakHour.toString().padLeft(2, '0')}:00 ${peakHour < 12 ? 'AM' : 'PM'}';
-    final peakEnd = '${(peakHour + 2).toString().padLeft(2, '0')}:00 ${(peakHour + 2) < 12 ? 'AM' : 'PM'}';
+    final peakStart =
+        '${peakHour.toString().padLeft(2, '0')}:00 ${peakHour < 12 ? 'AM' : 'PM'}';
+    final peakEnd =
+        '${(peakHour + 2).toString().padLeft(2, '0')}:00 ${(peakHour + 2) < 12 ? 'AM' : 'PM'}';
     final peakPerformance = totalMinutes == 0
         ? 0
         : ((peakMinutes / totalMinutes) * 100).round().clamp(0, 100);
+
+    // ── Weather × Mood correlation ──
+    // นับว่าแต่ละ weather condition มี mood อะไรบ้าง
+    final Map<String, Map<String, int>> weatherMoodMap = {};
+    for (final e in emotions) {
+      final condition = e['weatherCondition'] as String?;
+      if (condition == null || condition.isEmpty) continue;
+      final type = e['type'] as String? ?? 'neutral';
+      weatherMoodMap[condition] ??= {};
+      weatherMoodMap[condition]![type] =
+          (weatherMoodMap[condition]![type] ?? 0) + 1;
+    }
+
+    // หา dominant mood ของแต่ละ condition
+    final Map<String, String> weatherDominantMood = {};
+    final Map<String, int> weatherEntryCount = {};
+    weatherMoodMap.forEach((condition, moodCounts) {
+      String dominant = 'neutral';
+      int max = 0;
+      moodCounts.forEach((mood, count) {
+        if (count > max) {
+          max = count;
+          dominant = mood;
+        }
+      });
+      weatherDominantMood[condition] = dominant;
+      weatherEntryCount[condition] =
+          moodCounts.values.fold(0, (a, b) => a + b);
+    });
 
     return _InsightData(
       period: period,
@@ -271,10 +334,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       goalAchievement: goalAchievement,
       goalDiff: goalDiff,
       hasData: emotions.isNotEmpty || tasks.isNotEmpty,
+      weatherDominantMood: weatherDominantMood,
+      weatherEntryCount: weatherEntryCount,
     );
   }
 
-  // ── Pearson formula ──
   static double _pearson(List<double> x, List<double> y) {
     final n = x.length;
     if (n < 2) return 0;
@@ -290,14 +354,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return den == 0 ? 0 : (num / den).clamp(-1.0, 1.0);
   }
 
-  // ── Correlation text ──
-  static Map<String, dynamic> _correlationInfo(double r, int days, String mood) {
+  static Map<String, dynamic> _correlationInfo(
+      double r, int days, String mood) {
     if (days < 2) {
       return {
         'label': 'Not enough data yet',
         'emoji': '📊',
         'color': Colors.grey,
-        'desc': 'Log emotions and complete tasks for at least 2 days to see your correlation analysis.',
+        'desc':
+            'Log emotions and complete tasks for at least 2 days to see your correlation analysis.',
       };
     }
     if (r >= 0.7) {
@@ -305,8 +370,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         'label': 'Strong positive link',
         'emoji': '🔥',
         'color': const Color(0xFF7B5EA7),
-        'desc': 'When you feel ${_moodLabel(mood)}, you complete significantly more tasks. '
-            'Your mood is a strong productivity driver — harness it!',
+        'desc':
+            'When you feel ${_moodLabel(mood)}, you complete significantly more tasks. '
+                'Your mood is a strong productivity driver — harness it!',
       };
     } else if (r >= 0.4) {
       return {
@@ -321,8 +387,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         'label': 'Weak positive link',
         'emoji': '🤔',
         'color': Colors.orange,
-        'desc': 'There\'s a slight connection between your mood and productivity. '
-            'Try tracking more days for a clearer pattern.',
+        'desc':
+            'There\'s a slight connection between your mood and productivity. '
+                'Try tracking more days for a clearer pattern.',
       };
     } else if (r >= -0.1) {
       return {
@@ -337,17 +404,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         'label': 'Negative correlation',
         'emoji': '😮',
         'color': Colors.red,
-        'desc': 'Interestingly, you tend to complete more tasks on lower-mood days. '
-            'You might work well under pressure!',
+        'desc':
+            'Interestingly, you tend to complete more tasks on lower-mood days. '
+                'You might work well under pressure!',
       };
     }
   }
 
   static String _moodLabel(String type) {
     const map = {
-      'happy': 'Happy', 'calm': 'Calm', 'neutral': 'Neutral',
-      'stressed': 'Stressed', 'love': 'Loving',
-      'burnout': 'Burnt out', 'angry': 'Angry', 'sad': 'Sad',
+      'happy': 'Happy',
+      'calm': 'Calm',
+      'neutral': 'Neutral',
+      'stressed': 'Stressed',
+      'love': 'Loving',
+      'burnout': 'Burnt out',
+      'angry': 'Angry',
+      'sad': 'Sad',
     };
     return map[type] ?? type;
   }
@@ -371,32 +444,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return map[type] ?? const Color(0xFFF5F5F5);
   }
 
+  static String _weatherEmoji(String condition) {
+    switch (condition.toLowerCase()) {
+      case 'clear':        return '☀️';
+      case 'clouds':       return '☁️';
+      case 'rain':         return '🌧️';
+      case 'drizzle':      return '🌦️';
+      case 'thunderstorm': return '⛈️';
+      case 'snow':         return '❄️';
+      case 'mist':
+      case 'fog':
+      case 'haze':         return '🌫️';
+      default:             return '🌤️';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEFFFDF), // ✅ สีจาก Figma
+      backgroundColor: const Color(0xFFEFFFDF),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      width: 36, height: 36,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.7),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back, size: 18, color: Colors.black87),
+                      child: const Icon(Icons.arrow_back,
+                          size: 18, color: Colors.black87),
                     ),
                   ),
                   const Expanded(
                     child: Center(
                       child: Text('Insights & History',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700)),
                     ),
                   ),
                   const SizedBox(width: 36),
@@ -409,14 +501,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF7B5EA7)));
+                        child: CircularProgressIndicator(
+                            color: Color(0xFF7B5EA7)));
                   }
                   if (snap.hasError || !snap.hasData) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text('Error: ${snap.error}',
-                            style: const TextStyle(fontSize: 12, color: Colors.red),
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.red),
                             textAlign: TextAlign.center),
                       ),
                     );
@@ -436,7 +530,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final xLabels = isWeek
         ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         : ['Wk1', 'Wk2', 'Wk3', 'Wk4'];
-    final corrInfo = _correlationInfo(d.pearsonR, d.correlationDays, d.mostProductiveMood);
+    final corrInfo =
+        _correlationInfo(d.pearsonR, d.correlationDays, d.mostProductiveMood);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(35, 0, 35, 100),
@@ -452,14 +547,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header + toggle
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Expanded(
                       child: Text('Productivity\n& Mood\nAnalytics',
                           style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.w700, height: 1.35)),
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              height: 1.35)),
                     ),
                     Container(
                       decoration: BoxDecoration(
@@ -480,12 +576,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 18, vertical: 9),
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.white : Colors.transparent,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(22),
                                 boxShadow: isSelected
-                                    ? [BoxShadow(
-                                        color: Colors.black.withOpacity(0.07),
-                                        blurRadius: 8)]
+                                    ? [
+                                        BoxShadow(
+                                            color: Colors.black
+                                                .withOpacity(0.07),
+                                            blurRadius: 8)
+                                      ]
                                     : [],
                               ),
                               child: Text(p,
@@ -494,7 +595,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     fontWeight: isSelected
                                         ? FontWeight.w600
                                         : FontWeight.w400,
-                                    color: isSelected ? Colors.black87 : Colors.grey,
+                                    color: isSelected
+                                        ? Colors.black87
+                                        : Colors.grey,
                                   )),
                             ),
                           );
@@ -506,27 +609,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                 const SizedBox(height: 20),
 
-                // กราฟ Productivity Trend
                 Text(
                   isWeek
                       ? 'This Week Productivity Trend'
                       : 'This Month Productivity Trend',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w400),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 160,
                   child: d.chartSpots.isEmpty
                       ? Center(
-                          child: Text('Complete tasks to see your trend',
+                          child: Text(
+                              'Complete tasks to see your trend',
                               style: TextStyle(
-                                  color: Colors.grey.shade400, fontSize: 13)))
+                                  color: Colors.grey.shade400,
+                                  fontSize: 13)))
                       : LineChart(LineChartData(
                           gridData: FlGridData(
                             show: true,
                             drawVerticalLine: false,
-                            getDrawingHorizontalLine: (v) =>
-                                FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+                            getDrawingHorizontalLine: (v) => FlLine(
+                                color: Colors.grey.shade200,
+                                strokeWidth: 1),
                           ),
                           borderData: FlBorderData(show: false),
                           titlesData: FlTitlesData(
@@ -541,7 +647,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(xLabels[i],
                                         style: const TextStyle(
-                                            fontSize: 9, color: Colors.grey)),
+                                            fontSize: 9,
+                                            color: Colors.grey)),
                                   );
                                 },
                               ),
@@ -550,24 +657,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 reservedSize: 28,
-                                  getTitlesWidget: (v, _) {
-                                    if (v == v.floorToDouble()) {
-                                      return Text(
-                                        v.toInt().toString(),
-                                        style: const TextStyle(
+                                getTitlesWidget: (v, _) {
+                                  if (v == v.floorToDouble()) {
+                                    return Text(
+                                      v.toInt().toString(),
+                                      style: const TextStyle(
                                           fontSize: 9,
-                                          color: Colors.grey,
-                                        ),
-                                      );
-                                    }
-                                    return const SizedBox();
-                                  },
-                                ),
+                                          color: Colors.grey),
+                                    );
+                                  }
+                                  return const SizedBox();
+                                },
+                              ),
                             ),
                             topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
+                                sideTitles:
+                                    SideTitles(showTitles: false)),
                             rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
+                                sideTitles:
+                                    SideTitles(showTitles: false)),
                           ),
                           lineBarsData: [
                             LineChartBarData(
@@ -586,7 +694,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               ),
                               belowBarData: BarAreaData(
                                 show: true,
-                                color: const Color(0xFF7B5EA7).withOpacity(0.08),
+                                color: const Color(0xFF7B5EA7)
+                                    .withOpacity(0.08),
                               ),
                             ),
                           ],
@@ -596,7 +705,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                 const SizedBox(height: 20),
 
-                // Pattern Insight + Pearson Correlation รวมกัน
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
@@ -604,22 +712,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     color: const Color(0xFFF3EFFC),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: const Color(0xFF7B5EA7).withOpacity(0.2)),
+                        color:
+                            const Color(0xFF7B5EA7).withOpacity(0.2)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // หัวข้อ + emoji
                       Row(
                         children: [
                           Container(
-                            width: 30, height: 30,
+                            width: 30,
+                            height: 30,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF7B5EA7).withOpacity(0.12),
+                              color: const Color(0xFF7B5EA7)
+                                  .withOpacity(0.12),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.lightbulb_outline_rounded,
-                                size: 15, color: Color(0xFF7B5EA7)),
+                            child: const Icon(
+                                Icons.lightbulb_outline_rounded,
+                                size: 15,
+                                color: Color(0xFF7B5EA7)),
                           ),
                           const SizedBox(width: 8),
                           const Text('Your Pattern Insight',
@@ -629,10 +741,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   color: Color(0xFF7B5EA7))),
                         ],
                       ),
-
                       const SizedBox(height: 12),
-
-                      // Correlation bar
                       Row(
                         children: [
                           Text(corrInfo['emoji'] as String,
@@ -640,7 +749,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   mainAxisAlignment:
@@ -651,7 +761,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: corrInfo['color'] as Color,
+                                        color:
+                                            corrInfo['color'] as Color,
                                       ),
                                     ),
                                     if (d.correlationDays >= 2)
@@ -660,23 +771,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
-                                          color: corrInfo['color'] as Color,
+                                          color: corrInfo['color']
+                                              as Color,
                                         ),
                                       ),
                                   ],
                                 ),
                                 if (d.correlationDays >= 2) ...[
                                   const SizedBox(height: 6),
-                                  // Progress bar แสดง r value
                                   ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius:
+                                        BorderRadius.circular(4),
                                     child: LinearProgressIndicator(
                                       value: ((d.pearsonR + 1) / 2)
                                           .clamp(0.0, 1.0),
                                       minHeight: 6,
-                                      backgroundColor: Colors.grey.shade200,
-                                      valueColor: AlwaysStoppedAnimation(
-                                          corrInfo['color'] as Color),
+                                      backgroundColor:
+                                          Colors.grey.shade200,
+                                      valueColor:
+                                          AlwaysStoppedAnimation(
+                                              corrInfo['color']
+                                                  as Color),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -704,10 +819,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 10),
-
-                      // Description
                       Text(
                         corrInfo['desc'] as String,
                         style: const TextStyle(
@@ -715,15 +827,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             color: Colors.black87,
                             height: 1.5),
                       ),
-
-                      if (d.correlationDays >= 2) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Based on ${d.correlationDays} days of data',
-                          style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -741,18 +844,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Most Productive Mood',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 14),
                 Row(
                   children: [
                     Container(
-                      width: 52, height: 52,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         color: _moodBgColor(d.mostProductiveMood),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Center(
-                        child: Text(_moodEmoji(d.mostProductiveMood),
+                        child: Text(
+                            _moodEmoji(d.mostProductiveMood),
                             style: const TextStyle(fontSize: 26)),
                       ),
                     ),
@@ -762,9 +868,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       children: [
                         Text(_moodLabel(d.mostProductiveMood),
                             style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w700)),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700)),
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text('${d.moodProductivityRate}%',
@@ -774,8 +882,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     color: Color(0xFF7B5EA7))),
                             const SizedBox(width: 6),
                             const Text('productivity rate',
-                                style:
-                                    TextStyle(fontSize: 12, color: Colors.grey)),
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
                           ],
                         ),
                       ],
@@ -787,14 +895,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _moodBgColor(d.mostProductiveMood).withOpacity(0.5),
+                    color: _moodBgColor(d.mostProductiveMood)
+                        .withOpacity(0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     "When you're feeling ${_moodLabel(d.mostProductiveMood).toLowerCase()}, "
                     "your productivity soars! This mood helps you tackle tasks with creativity and focus.",
                     style: const TextStyle(
-                        fontSize: 13, color: Colors.black87, height: 1.5),
+                        fontSize: 13,
+                        color: Colors.black87,
+                        height: 1.5),
                   ),
                 ),
               ],
@@ -811,12 +922,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Peak Productive Time',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 14),
                 Row(
                   children: [
                     Container(
-                      width: 52, height: 52,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         color: const Color(0xFFE3F2FD),
                         borderRadius: BorderRadius.circular(16),
@@ -830,9 +943,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       children: [
                         Text('${d.peakStart} - ${d.peakEnd}',
                             style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w700)),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700)),
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text('${d.peakPerformance}%',
@@ -842,8 +957,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     color: Color(0xFF1565C0))),
                             const SizedBox(width: 6),
                             const Text('peak performance',
-                                style:
-                                    TextStyle(fontSize: 12, color: Colors.grey)),
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
                           ],
                         ),
                       ],
@@ -864,7 +979,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             'Schedule your most important tasks during this golden window.'
                         : 'Complete more focus sessions to discover your peak productive time.',
                     style: const TextStyle(
-                        fontSize: 13, color: Colors.black87, height: 1.5),
+                        fontSize: 13,
+                        color: Colors.black87,
+                        height: 1.5),
                   ),
                 ),
               ],
@@ -874,14 +991,152 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(height: 14),
 
           // ════════════════════════════════════════
-          // BLOCK 4: Weekly Summary + Great Progress
+          // BLOCK 4: Weather × Mood Insight ← ใหม่!
+          // ════════════════════════════════════════
+          _OuterBlock(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0F7FA),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child:
+                            Text('🌤️', style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text('Weather & Mood',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'How different weather affects your emotions',
+                  style:
+                      TextStyle(fontSize: 12, color: Color(0xFF8D8D8D)),
+                ),
+                const SizedBox(height: 16),
+
+                // ถ้ายังไม่มีข้อมูล weather
+                if (d.weatherDominantMood.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: const [
+                        Text('🌍', style: TextStyle(fontSize: 32)),
+                        SizedBox(height: 8),
+                        Text(
+                          'No weather data yet',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black54),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Log your mood while location is enabled\nto see how weather affects you',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black38,
+                              height: 1.5),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  // แสดง weather condition แต่ละอัน
+                  ...d.weatherDominantMood.entries.map((entry) {
+                    final condition = entry.key;
+                    final mood = entry.value;
+                    final count =
+                        d.weatherEntryCount[condition] ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _moodBgColor(mood).withOpacity(0.45),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(_weatherEmoji(condition),
+                                style:
+                                    const TextStyle(fontSize: 24)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    condition,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black87),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'You tend to feel ${_moodLabel(mood).toLowerCase()}',
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black54),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.end,
+                              children: [
+                                Text(_moodEmoji(mood),
+                                    style: const TextStyle(
+                                        fontSize: 20)),
+                                Text(
+                                  '$count log${count > 1 ? 's' : ''}',
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.black38),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ════════════════════════════════════════
+          // BLOCK 5: Weekly Summary
           // ════════════════════════════════════════
           _OuterBlock(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Weekly Summary',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
                 GridView.count(
                   crossAxisCount: 2,
@@ -925,17 +1180,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 14),
-
-                // Great Progress
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF8E1),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.amber.shade100),
+                    border:
+                        Border.all(color: Colors.amber.shade100),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,7 +1198,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             const Text('Great Progress!',
                                 style: TextStyle(
@@ -977,10 +1231,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 }
 
-// ─── Outer Block (4 บล็อกหลัก) ───────────────────────────────────────────────
+// ─── Outer Block ──────────────────────────────────────────────────────────────
 class _OuterBlock extends StatelessWidget {
   final Widget child;
-
   const _OuterBlock({required this.child});
 
   @override
@@ -1039,8 +1292,8 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Icon(icon, color: iconColor, size: 20),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isPositive
                       ? Colors.green.shade50
@@ -1068,7 +1321,9 @@ class _SummaryCard extends StatelessWidget {
                   color: Colors.black87)),
           Text(label,
               style: const TextStyle(
-                  fontSize: 11, color: Colors.black54, height: 1.3)),
+                  fontSize: 11,
+                  color: Colors.black54,
+                  height: 1.3)),
         ],
       ),
     );
@@ -1095,6 +1350,9 @@ class _InsightData {
   final int goalAchievement;
   final int goalDiff;
   final bool hasData;
+  // ── ใหม่ ──
+  final Map<String, String> weatherDominantMood;
+  final Map<String, int> weatherEntryCount;
 
   const _InsightData({
     required this.period,
@@ -1115,5 +1373,7 @@ class _InsightData {
     required this.goalAchievement,
     required this.goalDiff,
     required this.hasData,
+    required this.weatherDominantMood,
+    required this.weatherEntryCount,
   });
 }
