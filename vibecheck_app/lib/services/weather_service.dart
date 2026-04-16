@@ -34,11 +34,10 @@ class WeatherData {
 }
 
 class WeatherService {
-  // ใส่ API key ของตัวเองตรงนี้
   static const String _apiKey = '2040dab089c11e5a9402feac29b97ec9';
   static const String _baseUrl = 'https://api.openweathermap.org/data/2.5/weather';
 
-  /// ขอ permission GPS และดึง location
+  // ขอ permission GPS และดึง location
   static Future<Position?> _getLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return null;
@@ -55,7 +54,7 @@ class WeatherService {
     );
   }
 
-  /// ดึงข้อมูลอากาศจาก location จริง
+  // ดึงข้อมูลอากาศจาก location จริง
   static Future<WeatherData?> fetchWeather() async {
     try {
       final position = await _getLocation();

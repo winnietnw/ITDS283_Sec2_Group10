@@ -88,7 +88,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
     setState(() => _isRunning = false);
 
     final elapsed = widget.totalSeconds - _secondsLeft;
-    final willSave = elapsed >= 300; // 5 นาที = 300 วินาที
+    final willSave = elapsed >= 300;
 
     showDialog(
       context: context,
@@ -123,9 +123,9 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                     Navigator.pop(ctx);
                     if (willSave) {
                       await _saveSession();
-                      if (mounted) _showFinishScreen(); // ✅ ≥ 5 นาที → finish
+                      if (mounted) _showFinishScreen(); 
                     } else {
-                      if (mounted) Navigator.pop(context); // < 5 นาที → ออกเลย
+                      if (mounted) Navigator.pop(context);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -216,7 +216,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                       horizontal: 20, vertical: 12),
                   child: Row(
                     children: [
-                      // 🔴 Stop
+                      // Stop
                       GestureDetector(
                         onTap: _confirmStop,
                         child: Container(
@@ -268,7 +268,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
 
                       const Spacer(),
 
-                      // ⏸▶ Pause/Resume
+                      // Pause/Resume
                       GestureDetector(
                         onTap: _pauseResume,
                         child: Container(

@@ -10,7 +10,6 @@ class PrivacyScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ✅ Fixed top bar — ไม่เลื่อน
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
               child: Row(
@@ -42,7 +41,6 @@ class PrivacyScreen extends StatelessWidget {
               ),
             ),
 
-            // ✅ เนื้อหา scroll ได้
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 15, 18, 24),

@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -30,7 +29,7 @@ import 'screens/privacy_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/theme.dart';
 
-// providers (ต้องมีไฟล์จริง)
+// providers
 import 'provider/task_provider.dart';
 import 'provider/mood_provider.dart';
 import 'provider/timer_provider.dart';
@@ -54,7 +53,7 @@ class VibeCheckApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MoodProvider()),
         ChangeNotifierProvider(create: (_) => TimerProvider()),
       ],
-      child: MaterialApp( // ✅ ต้องอยู่ตรงนี้
+      child: MaterialApp(
         title: 'VibeCheck',
         debugShowCheckedModeBanner: false,
         builder: (context, child) {

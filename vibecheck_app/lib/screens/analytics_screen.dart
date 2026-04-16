@@ -991,7 +991,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(height: 14),
 
           // ════════════════════════════════════════
-          // BLOCK 4: Weather × Mood Insight ← ใหม่!
+          // BLOCK 4: Weather × Mood Insight
           // ════════════════════════════════════════
           _OuterBlock(
             child: Column(
@@ -1350,7 +1350,6 @@ class _InsightData {
   final int goalAchievement;
   final int goalDiff;
   final bool hasData;
-  // ── ใหม่ ──
   final Map<String, String> weatherDominantMood;
   final Map<String, int> weatherEntryCount;
 

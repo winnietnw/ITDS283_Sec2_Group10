@@ -55,7 +55,6 @@ class GoalProgressScreen extends StatelessWidget {
 
             return Stack(
               children: [
-                // ── Scrollable content — เว้น top 56 ให้ header ──
                 Positioned.fill(
                   top: 56,
                   child: ListView(

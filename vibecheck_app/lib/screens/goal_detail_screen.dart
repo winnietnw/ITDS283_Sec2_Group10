@@ -46,7 +46,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ✅ Fixed top bar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
               child: Row(
@@ -70,7 +69,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               ),
             ),
 
-            // ✅ Scrollable content
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 110),

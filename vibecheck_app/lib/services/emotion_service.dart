@@ -67,7 +67,7 @@ class _EmotionalGalaxyState extends State<EmotionalGalaxy>
   }
 }
 
-/// 🌌 PAINTER
+// PAINTER
 class GalaxyPainter extends CustomPainter {
   final List<EmotionData> emotions;
   final double progress;
@@ -80,7 +80,7 @@ class GalaxyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    /// ☀️ SUN
+    // SUN
     final sun = Paint()
       ..color = Colors.orangeAccent
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30);

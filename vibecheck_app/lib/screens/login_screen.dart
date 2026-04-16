@@ -13,15 +13,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _showPassword = false; // ตาดู password
+  bool _showPassword = false;
   String _errorMessage = '';
 
   // ค้นหา email จาก username ใน Firestore
   Future<String?> _getEmailFromUsername(String input) async {
-    // ถ้าใส่มามี @ = เป็น email อยู่แล้ว
     if (input.contains('@')) return input;
 
-    // ถ้าไม่มี @ = เป็น username → ค้นหาใน Firestore
     final query = await FirebaseFirestore.instance
         .collection('users')
         .where('username', isEqualTo: input)
@@ -94,7 +92,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Color.fromARGB(146, 0, 0, 0))),
                 const SizedBox(height: 32),
 
-                // Card ขาว
                 Container(
                   padding: const EdgeInsets.all(25),
                   decoration: BoxDecoration(
@@ -103,7 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Column(
                     children: [
-                      // Tab row
                       Row(children: [
                         Expanded(child: _tab('Login', true, null)),
                         const SizedBox(width: 8),
@@ -112,7 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ]),
                       const SizedBox(height: 20),
 
-                      // Username or Email field
                       _buildLabel('Username/Email'),
                       TextField(
                         controller: _usernameController,
@@ -120,7 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Password field + ตาดู
                       _buildLabel('Password'),
                       TextField(
                         controller: _passwordController,
@@ -141,7 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Error message
                       if (_errorMessage.isNotEmpty)
                         Align(
                           alignment: Alignment.centerLeft,
@@ -151,7 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       const SizedBox(height: 20),
 
-                      // Sign In button
                       Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
@@ -188,7 +180,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Forgot Password
                       GestureDetector(
                         onTap: () => Navigator.pushNamed(
                             context, '/forgot-password'),

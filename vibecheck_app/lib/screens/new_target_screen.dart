@@ -72,7 +72,6 @@ class _NewTargetScreenState extends State<NewTargetScreen>
       body: SafeArea(
         child: Column(
           children: [
-            /// TOP BAR ค้าง
             Container(
               color: Colors.white,
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
@@ -106,7 +105,6 @@ class _NewTargetScreenState extends State<NewTargetScreen>
               ),
             ),
 
-            /// CONTENT เลื่อนอย่างเดียว
             Expanded(
               child: FadeTransition(
                 opacity: _fadeAnimation,

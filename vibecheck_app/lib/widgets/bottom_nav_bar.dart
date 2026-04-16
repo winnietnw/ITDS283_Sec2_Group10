@@ -26,13 +26,13 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
   
-  // ✅ สีพื้นหลังของแต่ละ tab
+  // สีพื้นหลังของแต่ละ tab
   static const List<Color> _bgColors = [
-    Color(0xFFFFEFF3), // Home — ชมพูอ่อน
-    Color(0xFFFDFAF2), // Tasks — ขาวม่วงอ่อน
-    Color(0xFFEFFFDF), // Timer — เขียวอ่อน
-    Color(0xFFF2F6FD), // Emotion — ฟ้าอ่อน
-    Color(0xFFEDEDFF), // Settings — ม่วงอ่อน
+    Color(0xFFFFEFF3), // Home
+    Color(0xFFFDFAF2), // Tasks
+    Color(0xFFEFFFDF), // Timer
+    Color(0xFFF2F6FD), // Emotion
+    Color(0xFFEDEDFF), // Settings
   ];
 
   final List<Widget> _screens = [
@@ -57,13 +57,12 @@ class _MainNavigationState extends State<MainNavigation> {
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: _bgColors[_currentIndex], // ✅ เปลี่ยนสีตาม tab
+      backgroundColor: _bgColors[_currentIndex], // เปลี่ยนสีตาม tab
       body: Stack(
         children: [
-          // ✅ Screen content
           IndexedStack(index: _currentIndex, children: _screens),
 
-          // ✅ Floating nav bar
+          // Floating nav bar
           Positioned(
             left: 16,
             right: 16,

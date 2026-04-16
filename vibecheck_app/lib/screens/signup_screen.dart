@@ -46,7 +46,7 @@ class _SignupScreenState extends State<SignupScreen> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => Dialog(
-            backgroundColor: Colors.white, // เพิ่มบรรทัดนี้
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -62,7 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       fontSize: 16,
                       color: Color(0xFF1E1E2E),
                     ),
-                  ), // สีตัวอักษรชัด
+                  ),
                   const SizedBox(height: 6),
                   const Text(
                     'Your account has been created.',

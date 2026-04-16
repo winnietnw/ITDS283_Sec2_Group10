@@ -13,25 +13,25 @@ class _EmotionGalaxyState extends State<EmotionGalaxy>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
-  // speed = รอบต่อ animation cycle — วงในเร็ว วงนอกช้า
+  // speed รอบต่อ animation cycle — วงในเร็ว วงนอกช้า
   final List<_OrbitDot> _dots = [
-    // วงใน — หมุนเร็วสุด
+    // วงใน
     _OrbitDot(orbit: 0.12, startAngle: 0.0, size: 14,
-        color: Color(0xFFFFB3C6), speed: 1.8),   // ชมพู
+        color: Color(0xFFFFB3C6), speed: 1.8),
     _OrbitDot(orbit: 0.12, startAngle: pi, size: 9,
-        color: Color(0xFFB8E0FF), speed: 1.8),    // ฟ้า
+        color: Color(0xFFB8E0FF), speed: 1.8),
 
-    // วงกลาง — หมุนปานกลาง
+    // วงกลาง
     _OrbitDot(orbit: 0.24, startAngle: pi / 3, size: 7,
-        color: Color(0xFFE8D5FF), speed: 1.0),    // ม่วงอ่อน
+        color: Color(0xFFE8D5FF), speed: 1.0),
     _OrbitDot(orbit: 0.24, startAngle: pi + pi / 3, size: 6,
-        color: Color(0xFFB8E0FF), speed: 1.0),    // ฟ้า
+        color: Color(0xFFB8E0FF), speed: 1.0),
 
-    // วงนอก — หมุนช้าสุด
+    // วงนอก
     _OrbitDot(orbit: 0.36, startAngle: pi / 6, size: 16,
-        color: Color(0xFFE0C8FF), speed: 0.5),    // ม่วงพาสเทล
+        color: Color(0xFFE0C8FF), speed: 0.5),
     _OrbitDot(orbit: 0.36, startAngle: pi + pi / 6, size: 10,
-        color: Color(0xFFFFD6E7), speed: 0.5),    // ชมพูอ่อน
+        color: Color(0xFFFFD6E7), speed: 0.5),
   ];
 
   @override
@@ -61,21 +61,20 @@ class _EmotionGalaxyState extends State<EmotionGalaxy>
           height: widget.size,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            // สีตรงต้นฉบับ — น้ำเงินแซมม่วง ไม่มีแสงขาว
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF4A2080), // ม่วงเข้มซ้ายบน
-                Color(0xFF2D1B8E), // น้ำเงินม่วงกลาง
-                Color(0xFF1A1060), // น้ำเงินเข้มขวาล่าง
+                Color(0xFF4A2080),
+                Color(0xFF2D1B8E),
+                Color(0xFF1A1060),
               ],
               stops: [0.0, 0.5, 1.0],
             ),
           ),
           child: Stack(
             children: _dots.map((dot) {
-              // แต่ละวงหมุนด้วยความเร็วต่างกัน
+              // แต่ละวงหมุนความเร็วต่างกัน
               final angle = dot.startAngle +
                   _controller.value * 2 * pi * dot.speed;
               final radius = widget.size * dot.orbit;
@@ -107,7 +106,7 @@ class _OrbitDot {
   final double startAngle;
   final double size;
   final Color color;
-  final double speed; // วงในเร็ว วงนอกช้า
+  final double speed;
 
   const _OrbitDot({
     required this.orbit,

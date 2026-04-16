@@ -117,7 +117,6 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ✅ Fixed top bar — ไม่เลื่อน
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 26, 16, 4),
               child: Row(
@@ -141,7 +140,6 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
               ),
             ),
 
-            // ✅ content scroll ได้
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),

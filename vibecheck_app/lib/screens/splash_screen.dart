@@ -35,10 +35,8 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(),
-            // Galaxy widget ที่เพื่อนทำ
             const EmotionGalaxy(size: 280),
             const Spacer(),
-            // ข้อความล่าง
             const Text(
               'VibeCheck',
               style: TextStyle(

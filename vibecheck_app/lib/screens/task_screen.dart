@@ -463,16 +463,15 @@ class _TaskTile extends StatelessWidget {
     required this.onDelete,
   });
 
-  // สี deadline
   Color _deadlineColor(DateTime dl) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final dlDay = DateTime(dl.year, dl.month, dl.day);
     final diff = dlDay.difference(today).inDays;
-    if (diff < 0) return const Color(0xFFE53935); // เกิน → แดง
-    if (diff == 0) return const Color(0xFFFF7043); // วันนี้ → ส้ม
-    if (diff <= 2) return const Color(0xFFFFB300); // ใกล้ → เหลือง
-    return Colors.grey.shade400; // ยังไกล → เทา
+    if (diff < 0) return const Color(0xFFE53935);
+    if (diff == 0) return const Color(0xFFFF7043);
+    if (diff <= 2) return const Color(0xFFFFB300);
+    return Colors.grey.shade400;
   }
 
   String _deadlineLabel(DateTime dl) {

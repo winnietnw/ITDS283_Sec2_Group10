@@ -6,7 +6,7 @@ class GoalProgressService {
   static CollectionReference<Map<String, dynamic>> get _ref =>
       FirebaseFirestore.instance.collection('goal_progress');
 
-  // ✅ doc id แยกตาม user
+  // doc id แยกตาม user
   static String get _docId {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
     return 'current_active_$uid';

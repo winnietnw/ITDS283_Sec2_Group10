@@ -21,7 +21,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
   late final AnimationController _orbitController;
   double _elapsed = 0;
 
-  // ✅ FIX: เก็บ stream ไว้ใน state ไม่สร้างใหม่ทุก build
+  // เก็บ stream ไว้ใน state ไม่สร้างใหม่ทุก build
   late Stream<QuerySnapshot<Map<String, dynamic>>> _emotionStream =
     const Stream.empty();
 
@@ -41,7 +41,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
       });
     });
 
-    // ✅ FIX: init stream ครั้งแรก
+    // init stream ครั้งแรก
     _emotionStream = _buildEmotionStream(_weekOffset);
   }
 
@@ -63,7 +63,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
     return DateTimeRange(start: start, end: end);
   }
 
-  // ✅ FIX: สร้าง stream แยกตาม week offset
+  // สร้าง stream แยกตาม week offset
   Stream<QuerySnapshot<Map<String, dynamic>>> _buildEmotionStream(int offset) {
     final range = _weekRange(offset);
     final start = DateTime(range.start.year, range.start.month, range.start.day);
@@ -80,7 +80,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
         .snapshots();
   }
 
-  // ✅ FIX: เปลี่ยนสัปดาห์แล้วอัปเดต stream พร้อมกัน
+  // เปลี่ยนสัปดาห์แล้วอัปเดต stream พร้อมกัน
   void _changeWeek(int newOffset) {
     if (newOffset > 0) return;
 
@@ -258,7 +258,7 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
       backgroundColor: const Color(0xFFF2F6FD),
       body: SafeArea(
         child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          // ✅ FIX: ใช้ stream ที่เก็บใน state
+          // ใช้ stream ที่เก็บใน state
           stream: _emotionStream,
           builder: (context, snapshot) {
             final docs = snapshot.data?.docs ?? [];
@@ -382,7 +382,6 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 GestureDetector(
-                                  // ✅ FIX
                                   onTap: () => _changeWeek(_weekOffset - 1),
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
@@ -402,7 +401,6 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                   final dotOffset = -(4 - i);
                                   final isActive = dotOffset == _weekOffset;
                                   return GestureDetector(
-                                    // ✅ FIX
                                     onTap: () => _changeWeek(dotOffset),
                                     child: Container(
                                       margin: const EdgeInsets.symmetric(
@@ -421,7 +419,6 @@ class _AnalyticsEmotionScreenState extends State<AnalyticsEmotionScreen>
                                 }),
                                 const SizedBox(width: 8),
                                 GestureDetector(
-                                  // ✅ FIX
                                   onTap: () {
                                     if (_weekOffset < 0) {
                                       _changeWeek(_weekOffset + 1);
