@@ -237,11 +237,11 @@ class _TimerScreenState extends State<TimerScreen>
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7B5EA7),
+                          color: const Color(0xFF4A4A5A),
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF7B5EA7).withOpacity(0.4),
+                              color: const Color(0xFF4A4A5A).withOpacity(0.4),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
