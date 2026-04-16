@@ -244,8 +244,10 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
         isDeleting = false;
       });
 
-      Navigator.pop(context);
-      _showDeleteSuccess(context);
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        _showDeleteSuccess(context);
+      }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
@@ -395,20 +397,17 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _DeleteSuccessDialog(
+      builder: (dialogContext) => _DeleteSuccessDialog(
         onClose: () async {
-          Navigator.pop(context);
-
+          Navigator.of(dialogContext).pop();
           try {
             await FirebaseAuth.instance.signOut();
           } catch (_) {}
-
-          if (context.mounted) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/login',
-              (route) => false,
-            );
+          if (dialogContext.mounted) {
+            Navigator.of(
+              dialogContext,
+              rootNavigator: true,
+            ).pushNamedAndRemoveUntil('/login', (route) => false);
           }
         },
       ),
