@@ -67,7 +67,7 @@ flutter pub get
 ```dart
 static const String _apiKey = 'YOUR_OPENWEATHERMAP_API_KEY';
 ```
-ด้วย API Key จริงของคุณ
+ด้วย API Key จริง
 
 **4. รันแอป**
 ```bash
