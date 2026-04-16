@@ -1,5 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class RemindersSoundsScreen extends StatefulWidget {
   const RemindersSoundsScreen({super.key});
@@ -9,6 +14,9 @@ class RemindersSoundsScreen extends StatefulWidget {
 }
 
 class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
+  final FlutterLocalNotificationsPlugin _notifications =
+      FlutterLocalNotificationsPlugin();
+
   bool emailReminder = false;
   bool dailyReminder = true;
   bool vibration = true;
@@ -37,6 +45,7 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
   void initState() {
     super.initState();
     emailText = FirebaseAuth.instance.currentUser?.email ?? 'youremail@gmail.com';
+    _initializeNotifications();
   }
 
   Future<void> _showPopupOptions({
@@ -107,6 +116,150 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
       final text =
           '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
       onSelected(text);
+      _updateReminderSchedule();
+    }
+  }
+
+  Future<void> _initializeNotifications() async {
+    await _configureLocalTimeZone();
+
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    await _notifications.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
+    );
+
+    await _createNotificationChannel();
+    await _updateReminderSchedule();
+  }
+
+  Future<void> _configureLocalTimeZone() async {
+    tz.initializeTimeZones();
+    try {
+      final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (_) {
+      // Fallback to UTC if timezone detection fails
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
+  }
+
+  Future<void> _createNotificationChannel() async {
+    const channel = AndroidNotificationChannel(
+      'vibecheck_reminders',
+      'VibeCheck Reminders',
+      description: 'แจ้งเตือนเป้าหมายและเสียงเตือน',
+      importance: Importance.max,
+      enableVibration: true,
+      playSound: true,
+    );
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  Future<void> _updateReminderSchedule() async {
+    if (appReminderStatus == 'Disabled' || !dailyReminder) {
+      await _notifications.cancel(1);
+      await _notifications.cancel(2);
+      return;
+    }
+
+    await _scheduleNotification(
+      id: 1,
+      title: 'Morning Reminder',
+      body: 'ถึงเวลาเช็คเป้าหมายของคุณในตอนเช้าแล้ว',
+      timeText: morningTime,
+    );
+    await _scheduleNotification(
+      id: 2,
+      title: 'Evening Reminder',
+      body: 'ถึงเวลาเช็คเป้าหมายของคุณในตอนเย็นแล้ว',
+      timeText: eveningTime,
+    );
+  }
+
+  Future<void> _scheduleNotification({
+    required int id,
+    required String title,
+    required String body,
+    required String timeText,
+  }) async {
+    final scheduledDate = _nextInstanceOfTime(timeText);
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'vibecheck_reminders',
+        'VibeCheck Reminders',
+        channelDescription: 'แจ้งเตือนเป้าหมายและเสียงเตือน',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: reminderPlanSound,
+        enableVibration: vibration,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: reminderPlanSound,
+      ),
+    );
+
+    await _notifications.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledDate,
+      details,
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.wallClockTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  tz.TZDateTime _nextInstanceOfTime(String timeText) {
+    final parts = timeText.split(':');
+    final int hour = int.tryParse(parts.first) ?? 9;
+    final int minute = int.tryParse(parts.last) ?? 0;
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (scheduled.isBefore(now) || scheduled.isAtSameMomentAs(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
+  Future<void> _showTestNotification() async {
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'vibecheck_reminders',
+        'VibeCheck Reminders',
+        channelDescription: 'แจ้งเตือนเป้าหมายและเสียงเตือน',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: reminderPlanSound,
+        enableVibration: vibration,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: reminderPlanSound,
+      ),
+    );
+
+    await _notifications.show(
+      100,
+      'ทดสอบแจ้งเตือน',
+      'นี่คือการแจ้งเตือนตัวอย่างพร้อมเสียงและการสั่น',
+      details,
+    );
+    if (vibration) {
+      HapticFeedback.vibrate();
     }
   }
 
@@ -150,14 +303,40 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.notifications_none,
                       title: 'Notification and Reminder',
                       trailing: null,
-                      child: _optionTile(
-                        leftText: 'APP Reminder',
-                        rightText: appReminderStatus,
-                        onLeftTap: () {},
-                        rightOptions: _appReminderOptions,
-                        currentValue: appReminderStatus,
-                        onRightSelected: (value) =>
-                            setState(() => appReminderStatus = value),
+                      child: Column(
+                        children: [
+                          _optionTile(
+                            leftText: 'APP Reminder',
+                            rightText: appReminderStatus,
+                            onLeftTap: () {},
+                            rightOptions: _appReminderOptions,
+                            currentValue: appReminderStatus,
+                            onRightSelected: (value) {
+                              setState(() => appReminderStatus = value);
+                              _updateReminderSchedule();
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFFEEF3FF),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                foregroundColor: const Color(0xFF3D5AFE),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 14,
+                                ),
+                              ),
+                              onPressed: _showTestNotification,
+                              icon: const Icon(Icons.notifications_active, size: 18),
+                              label: const Text('ทดสอบแจ้งเตือนทันที'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -180,7 +359,10 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       title: 'Daily Reminders',
                       trailing: SmallGradientToggle(
                         value: dailyReminder,
-                        onChanged: (value) => setState(() => dailyReminder = value),
+                        onChanged: (value) {
+                          setState(() => dailyReminder = value);
+                          _updateReminderSchedule();
+                        },
                       ),
                       child: Column(
                         children: [
@@ -189,7 +371,10 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                             rightText: morningStatus,
                             onLeftTap: () => _pickTime(
                               initialTime: morningTime,
-                              onSelected: (value) => setState(() => morningTime = value),
+                              onSelected: (value) {
+                                setState(() => morningTime = value);
+                                _updateReminderSchedule();
+                              },
                             ),
                             rightOptions: _pendingOptions,
                             currentValue: morningStatus,
@@ -202,7 +387,10 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                             rightText: eveningStatus,
                             onLeftTap: () => _pickTime(
                               initialTime: eveningTime,
-                              onSelected: (value) => setState(() => eveningTime = value),
+                              onSelected: (value) {
+                                setState(() => eveningTime = value);
+                                _updateReminderSchedule();
+                              },
                             ),
                             rightOptions: _pendingOptions,
                             currentValue: eveningStatus,
@@ -219,7 +407,12 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.vibration,
                       title: 'Vibration',
                       value: vibration,
-                      onChanged: (value) => setState(() => vibration = value),
+                      onChanged: (value) {
+                        setState(() => vibration = value);
+                        if (value) {
+                          HapticFeedback.vibrate();
+                        }
+                      },
                     ),
 
                     const SizedBox(height: 14),
@@ -228,7 +421,12 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.smart_button_outlined,
                       title: 'Button Sound',
                       value: buttonSound,
-                      onChanged: (value) => setState(() => buttonSound = value),
+                      onChanged: (value) {
+                        setState(() => buttonSound = value);
+                        if (value) {
+                          SystemSound.play(SystemSoundType.click);
+                        }
+                      },
                     ),
 
                     const SizedBox(height: 14),
@@ -237,7 +435,12 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                       icon: Icons.check_circle_outline,
                       title: 'Completion Sound',
                       value: completionSound,
-                      onChanged: (value) => setState(() => completionSound = value),
+                      onChanged: (value) {
+                        setState(() => completionSound = value);
+                        if (value) {
+                          SystemSound.play(SystemSoundType.alert);
+                        }
+                      },
                     ),
 
                     const SizedBox(height: 14),
