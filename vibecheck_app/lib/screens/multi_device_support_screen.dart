@@ -213,35 +213,19 @@ class _MultiDeviceSupportScreenState extends State<MultiDeviceSupportScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Column(
+                      child: const Row(
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _SupportedDeviceItem(
-                                  icon: Icons.apple,
-                                  label: 'iOS Mobile',
-                                ),
-                              ),
-                              Expanded(
-                                child: _SupportedDeviceItem(
-                                  icon: Icons.android,
-                                  label: 'Android Mobile',
-                                ),
-                              ),
-                            ],
+                          Expanded(
+                            child: _SupportedDeviceItem(
+                              icon: Icons.apple,
+                              label: 'iOS Mobile',
+                            ),
                           ),
-                          SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _SupportedDeviceItem(
-                                  icon: Icons.language,
-                                  label: 'Web',
-                                ),
-                              ),
-                              Expanded(child: SizedBox()),
-                            ],
+                          Expanded(
+                            child: _SupportedDeviceItem(
+                              icon: Icons.android,
+                              label: 'Android Mobile',
+                            ),
                           ),
                         ],
                       ),

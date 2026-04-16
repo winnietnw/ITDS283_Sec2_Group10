@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,9 @@ class RemindersSoundsScreen extends StatefulWidget {
 }
 
 class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
+  static const MethodChannel _settingsChannel =
+      MethodChannel('com.example.vibecheck_app/settings');
+
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
@@ -133,6 +138,12 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
       const InitializationSettings(android: androidInit, iOS: iosInit),
     );
 
+    if (Platform.isAndroid) {
+      await _notifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
+
     await _createNotificationChannel();
     await _updateReminderSchedule();
   }
@@ -194,6 +205,9 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
         priority: Priority.high,
         playSound: reminderPlanSound,
         enableVibration: vibration,
+        vibrationPattern: vibration
+            ? Int64List.fromList([0, 500, 200, 500])
+            : null,
       ),
       iOS: DarwinNotificationDetails(
         presentAlert: true,
@@ -237,6 +251,9 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
         priority: Priority.high,
         playSound: reminderPlanSound,
         enableVibration: vibration,
+        vibrationPattern: vibration
+            ? Int64List.fromList([0, 500, 200, 500])
+            : null,
       ),
       iOS: DarwinNotificationDetails(
         presentAlert: true,
@@ -253,6 +270,16 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
     );
     if (vibration) {
       HapticFeedback.vibrate();
+    }
+  }
+
+  Future<void> _openAppNotificationSettings() async {
+    if (!Platform.isAndroid) return;
+
+    try {
+      await _settingsChannel.invokeMethod('openAppNotificationSettings');
+    } on PlatformException catch (error) {
+      debugPrint('Failed to open notification settings: ${error.message}');
     }
   }
 
@@ -308,26 +335,6 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
                               setState(() => appReminderStatus = value);
                               _updateReminderSchedule();
                             },
-                          ),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton.icon(
-                              style: TextButton.styleFrom(
-                                backgroundColor: const Color(0xFFEEF3FF),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                foregroundColor: const Color(0xFF3D5AFE),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 14,
-                                ),
-                              ),
-                              onPressed: _showTestNotification,
-                              icon: const Icon(Icons.notifications_active, size: 18),
-                              label: const Text('ทดสอบแจ้งเตือนทันที'),
-                            ),
                           ),
                         ],
                       ),
