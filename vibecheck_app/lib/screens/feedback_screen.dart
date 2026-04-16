@@ -176,11 +176,6 @@ class _FeedbackDialogState extends State<_FeedbackDialog> {
       return false;
     }
 
-    if (selectedImageBytes == null) {
-      _showError('Please add an image.');
-      return false;
-    }
-
     if (userEmail.isEmpty || userEmail == 'No email') {
       _showError('No user email found. Please log in again.');
       return false;
@@ -195,7 +190,9 @@ class _FeedbackDialogState extends State<_FeedbackDialog> {
     );
   }
 
-  Future<String> _uploadImageToStorage() async {
+  Future<String?> _uploadImageToStorage() async {
+    if (selectedImageBytes == null) return null;
+
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${selectedImageName ?? 'feedback_image.jpg'}';
 
@@ -228,9 +225,9 @@ class _FeedbackDialogState extends State<_FeedbackDialog> {
     try {
       final imageUrl = await _uploadImageToStorage();
 
-      final imagePath = FirebaseStorage.instance
-          .refFromURL(imageUrl)
-          .fullPath;
+      final imagePath = imageUrl != null
+        ? FirebaseStorage.instance.refFromURL(imageUrl).fullPath
+        : null;
 
       await FirebaseFirestore.instance.collection('feedback').add({
         'userId': userId,
@@ -310,6 +307,7 @@ class _FeedbackDialogState extends State<_FeedbackDialog> {
                     value: selectedIssue,
                     isExpanded: true,
                     borderRadius: BorderRadius.circular(12),
+                    dropdownColor: const Color(0xFFF7F7F7),
                     hint: const Text(
                       'Please select the issue type',
                       style: TextStyle(
