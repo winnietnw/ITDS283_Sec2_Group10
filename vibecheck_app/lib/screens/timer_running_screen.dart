@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TimerRunningScreen extends StatefulWidget {
   final int totalSeconds;
@@ -20,22 +21,120 @@ class TimerRunningScreen extends StatefulWidget {
   State<TimerRunningScreen> createState() => _TimerRunningScreenState();
 }
 
-class _TimerRunningScreenState extends State<TimerRunningScreen> {
+class _TimerRunningScreenState extends State<TimerRunningScreen>
+    with WidgetsBindingObserver {
   late int _secondsLeft;
   bool _isRunning = true;
   Timer? _timer;
 
+  static const _keyStartTime = 'timer_start_epoch';
+  static const _keyTotalSecs = 'timer_total_seconds';
+  static const _keyRunning = 'timer_is_running';
+  static const _keySecsLeft = 'timer_seconds_left';
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _secondsLeft = widget.totalSeconds;
+    _initTimer();
+  }
+
+  // ── ตรวจว่ามี session ค้างอยู่ไหม ──
+  Future<void> _initTimer() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTotal = prefs.getInt(_keyTotalSecs);
+    final startEpoch = prefs.getInt(_keyStartTime);
+    final wasRunning = prefs.getBool(_keyRunning) ?? false;
+
+    if (savedTotal != null &&
+        savedTotal == widget.totalSeconds &&
+        startEpoch != null &&
+        wasRunning) {
+      // คำนวณว่าผ่านไปกี่วินาทีแล้ว
+      final elapsed =
+          (DateTime.now().millisecondsSinceEpoch - startEpoch) ~/ 1000;
+      final remaining = widget.totalSeconds - elapsed;
+
+      if (remaining > 0) {
+        setState(() => _secondsLeft = remaining);
+        _startTimer();
+        return;
+      }
+    }
+
+    // เริ่มใหม่
+    await _saveTimerState(isRunning: true);
     _startTimer();
   }
 
+  Future<void> _saveTimerState({required bool isRunning}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyTotalSecs, widget.totalSeconds);
+    await prefs.setBool(_keyRunning, isRunning);
+    await prefs.setInt(_keySecsLeft, _secondsLeft);
+    if (isRunning) {
+      // บันทึกเวลาที่ควรจะเสร็จ (เพื่อคำนวณตอนกลับมา)
+      final startEpoch = DateTime.now().millisecondsSinceEpoch -
+          (widget.totalSeconds - _secondsLeft) * 1000;
+      await prefs.setInt(_keyStartTime, startEpoch);
+    }
+  }
+
+  Future<void> _clearTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyStartTime);
+    await prefs.remove(_keyTotalSecs);
+    await prefs.remove(_keyRunning);
+    await prefs.remove(_keySecsLeft);
+  }
+
+  // ── detect เวลาแอป background/foreground ──
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // แอปไป background — save state
+      _timer?.cancel();
+      _saveTimerState(isRunning: _isRunning);
+    } else if (state == AppLifecycleState.resumed) {
+      // แอปกลับมา — restore state
+      if (_isRunning) {
+        _restoreFromBackground();
+      }
+    }
+  }
+
+  Future<void> _restoreFromBackground() async {
+    final prefs = await SharedPreferences.getInstance();
+    final startEpoch = prefs.getInt(_keyStartTime);
+    if (startEpoch == null) return;
+
+    final elapsed =
+        (DateTime.now().millisecondsSinceEpoch - startEpoch) ~/ 1000;
+    final remaining = widget.totalSeconds - elapsed;
+
+    if (remaining <= 0) {
+      // หมดเวลาตอน background
+      await _saveSession();
+      if (mounted) {
+        setState(() {
+          _secondsLeft = 0;
+          _isRunning = false;
+        });
+        _showFinishScreen();
+      }
+    } else {
+      setState(() => _secondsLeft = remaining);
+      _startTimer();
+    }
+  }
+
   void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (_secondsLeft <= 0) {
         t.cancel();
+        await _clearTimerState();
         await _saveSession();
         if (mounted) {
           setState(() => _isRunning = false);
@@ -64,7 +163,9 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
     if (_isRunning) {
       _timer?.cancel();
       setState(() => _isRunning = false);
+      _saveTimerState(isRunning: false);
     } else {
+      _saveTimerState(isRunning: true);
       _startTimer();
       setState(() => _isRunning = true);
     }
@@ -94,8 +195,8 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.white,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -114,16 +215,15 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // End button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(ctx);
+                    await _clearTimerState();
                     if (willSave) {
                       await _saveSession();
-                      if (mounted) _showFinishScreen(); 
+                      if (mounted) _showFinishScreen();
                     } else {
                       if (mounted) Navigator.pop(context);
                     }
@@ -142,15 +242,13 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                           fontWeight: FontWeight.w600)),
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              // Continue button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.pop(ctx);
+                    _saveTimerState(isRunning: true);
                     _startTimer();
                     setState(() => _isRunning = true);
                   },
@@ -195,6 +293,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
@@ -206,17 +305,14 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
       body: Stack(
         children: [
           const _FloatingCircles(),
-
           SafeArea(
             child: Column(
               children: [
-                // Top bar
                 Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20, vertical: 12),
                   child: Row(
                     children: [
-                      // Stop
                       GestureDetector(
                         onTap: _confirmStop,
                         child: Container(
@@ -232,9 +328,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                               size: 18, color: Color(0xFFE53935)),
                         ),
                       ),
-
                       const Spacer(),
-
                       Column(
                         children: [
                           Text(
@@ -250,8 +344,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 3),
                             decoration: BoxDecoration(
-                              color: _modeColor(widget.mode)
-                                  .withOpacity(0.12),
+                              color: _modeColor(widget.mode).withOpacity(0.12),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -265,10 +358,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                           ),
                         ],
                       ),
-
                       const Spacer(),
-
-                      // Pause/Resume
                       GestureDetector(
                         onTap: _pauseResume,
                         child: Container(
@@ -292,10 +382,7 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                     ],
                   ),
                 ),
-
                 const Spacer(),
-
-                // Clock
                 SizedBox(
                   width: 260,
                   height: 260,
@@ -334,15 +421,11 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
                     ),
                   ),
                 ),
-
                 const Spacer(),
-
-                // Planet
                 CustomPaint(
                   size: const Size(80, 80),
                   painter: _PlanetPainter(),
                 ),
-
                 const SizedBox(height: 40),
               ],
             ),
@@ -358,7 +441,6 @@ class _TimerRunningScreenState extends State<TimerRunningScreen> {
 // ══════════════════════════════════════════════════════
 class _CountdownTickPainter extends CustomPainter {
   final double progress;
-
   const _CountdownTickPainter({required this.progress});
 
   @override
@@ -366,7 +448,6 @@ class _CountdownTickPainter extends CustomPainter {
     final cx = size.width / 2;
     final cy = size.height / 2;
     final r = min(cx, cy) - 4;
-
     final activeTicks = (progress * 60).round().clamp(0, 60);
 
     for (int i = 0; i < 60; i++) {
@@ -377,14 +458,13 @@ class _CountdownTickPainter extends CustomPainter {
 
       double opacity;
       if (i < activeTicks) {
-        opacity = (1.0 - (i / activeTicks.clamp(1, 60)) * 0.75)
-            .clamp(0.15, 1.0);
+        opacity =
+            (1.0 - (i / activeTicks.clamp(1, 60)) * 0.75).clamp(0.15, 1.0);
       } else {
         opacity = 0.06;
       }
 
-      final p1 = Offset(
-          cx + (r - tickLen) * cos(angle),
+      final p1 = Offset(cx + (r - tickLen) * cos(angle),
           cy + (r - tickLen) * sin(angle));
       final p2 = Offset(cx + r * cos(angle), cy + r * sin(angle));
 
@@ -419,7 +499,6 @@ class _FloatingCirclesState extends State<_FloatingCircles>
   late final List<AnimationController> _controllers;
   late final List<Animation<double>> _anims;
 
-  // (color, size, left%, top%, duration)
   static const _circles = [
     (Color(0xFFFFB3C6), 60.0, 0.05, 0.08, 4),
     (Color(0xFFB3D9FF), 80.0, 0.75, 0.05, 5),
@@ -488,17 +567,10 @@ class _PlanetPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-
-    canvas.drawCircle(
-      Offset(cx, cy),
-      26,
-      Paint()..color = const Color(0xFF7B5EA7).withOpacity(0.15),
-    );
-    canvas.drawCircle(
-      Offset(cx, cy),
-      20,
-      Paint()..color = const Color(0xFF7B5EA7).withOpacity(0.25),
-    );
+    canvas.drawCircle(Offset(cx, cy), 26,
+        Paint()..color = const Color(0xFF7B5EA7).withOpacity(0.15));
+    canvas.drawCircle(Offset(cx, cy), 20,
+        Paint()..color = const Color(0xFF7B5EA7).withOpacity(0.25));
     canvas.drawOval(
       Rect.fromCenter(
           center: Offset(cx, cy), width: size.width * 0.9, height: 14),
@@ -520,10 +592,7 @@ class _FinishScreen extends StatelessWidget {
   final int minutes;
   final String focusLabel;
 
-  const _FinishScreen({
-    required this.minutes,
-    required this.focusLabel,
-  });
+  const _FinishScreen({required this.minutes, required this.focusLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -532,7 +601,6 @@ class _FinishScreen extends StatelessWidget {
       body: Stack(
         children: [
           const _FloatingCircles(),
-
           SafeArea(
             child: Center(
               child: Padding(
@@ -541,7 +609,6 @@ class _FinishScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Spacer(),
-
                     const Text(
                       'VibeCheck',
                       style: TextStyle(
@@ -551,14 +618,10 @@ class _FinishScreen extends StatelessWidget {
                         letterSpacing: 0.5,
                       ),
                     ),
-
                     const SizedBox(height: 32),
-
                     const Icon(Icons.star_rounded,
                         size: 80, color: Colors.amber),
-
                     const SizedBox(height: 32),
-
                     RichText(
                       textAlign: TextAlign.center,
                       text: TextSpan(
@@ -577,13 +640,12 @@ class _FinishScreen extends StatelessWidget {
                           ),
                           TextSpan(text: ' on $focusLabel\n'),
                           const TextSpan(
-                              text: 'Focus now, shine like a star later.'),
+                              text:
+                                  'Focus now, shine like a star later.'),
                         ],
                       ),
                     ),
-
                     const Spacer(),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -606,7 +668,6 @@ class _FinishScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 32),
                   ],
                 ),
