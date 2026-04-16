@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -140,13 +139,7 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
 
   Future<void> _configureLocalTimeZone() async {
     tz.initializeTimeZones();
-    try {
-      final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-    } catch (_) {
-      // Fallback to UTC if timezone detection fails
-      tz.setLocalLocation(tz.getLocation('UTC'));
-    }
+    tz.setLocalLocation(tz.getLocation('Asia/Bangkok'));
   }
 
   Future<void> _createNotificationChannel() async {
