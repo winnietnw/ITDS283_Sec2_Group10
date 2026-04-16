@@ -534,7 +534,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _correlationInfo(d.pearsonR, d.correlationDays, d.mostProductiveMood);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(35, 0, 35, 100),
+      padding: const EdgeInsets.fromLTRB(27, 0, 27, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

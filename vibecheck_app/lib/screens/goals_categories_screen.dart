@@ -16,6 +16,8 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
   int selectedTab = 0;
   final TextEditingController _controller = TextEditingController();
 
+  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
+
   CollectionReference<Map<String, dynamic>> get _classificationCollection {
     return FirebaseFirestore.instance.collection('classifications');
   }
@@ -159,6 +161,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
         'title': text,
         'order': nextOrder,
         'createdAt': Timestamp.now(),
+        'userId': _uid,
       });
     }
 
@@ -365,6 +368,7 @@ class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
                     if (selectedTab == 0)
                       StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                         stream: _classificationCollection
+                            .where('userId', isEqualTo: _uid)
                             .orderBy('order')
                             .snapshots(),
                         builder: (context, snapshot) {
