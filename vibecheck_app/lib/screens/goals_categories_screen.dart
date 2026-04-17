@@ -6,7 +6,8 @@ import 'goal_progress_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class GoalsCategoriesScreen extends StatefulWidget {
-  const GoalsCategoriesScreen({super.key});
+  final int initialTab;
+  const GoalsCategoriesScreen({super.key, this.initialTab = 0});
 
   @override
   State<GoalsCategoriesScreen> createState() => _GoalsCategoriesScreenState();
@@ -15,6 +16,12 @@ class GoalsCategoriesScreen extends StatefulWidget {
 class _GoalsCategoriesScreenState extends State<GoalsCategoriesScreen> {
   int selectedTab = 0;
   final TextEditingController _controller = TextEditingController();
+
+   @override
+  void initState() {
+    super.initState();
+    selectedTab = widget.initialTab;
+  }
 
   String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 

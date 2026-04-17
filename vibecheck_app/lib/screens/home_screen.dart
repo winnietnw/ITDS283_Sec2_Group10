@@ -9,6 +9,7 @@ import '../data/goal_templates.dart';
 import '../screens/goal_progress_screen.dart';
 import '../services/goal_progress_service.dart';
 import '../services/weather_service.dart';
+import '../screens/goals_categories_screen.dart';
 
 class EmotionData {
   final String type;
@@ -620,8 +621,15 @@ class _HomeScreenState extends State<HomeScreen>
                                       ),
                                       GestureDetector(
                                         onTap: () =>
-                                            Navigator.pushNamed(
-                                                context, '/settings'),
+                                            Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const GoalsCategoriesScreen(
+                                                  initialTab: 1,
+                                                ),
+                                          ),
+                                        ),
                                         child: Container(
                                           padding:
                                               const EdgeInsets.symmetric(
