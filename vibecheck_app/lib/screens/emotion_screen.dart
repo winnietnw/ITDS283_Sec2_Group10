@@ -55,10 +55,11 @@ class _EmotionScreenState extends State<EmotionScreen> {
 
     if (!mounted) return;
 
+    // ถ้าบันทึกแล้ววันนี้ → แสดงหน้า analytics_emotion แทน ไม่ต้อง navigate
     if (snap.docs.isNotEmpty) {
       setState(() {
         _checked = true;
-        _alreadySaved = true;
+        _alreadySaved = true; // เพิ่ม flag นี้
       });
     } else {
       setState(() => _checked = true);
@@ -85,6 +86,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ระหว่างเช็ค แสดง loading
     if (!_checked) {
       return const Scaffold(
         backgroundColor: Color(0xFFE8EEF9),
@@ -101,19 +103,21 @@ class _EmotionScreenState extends State<EmotionScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
+            /// 🔥 HEADER FIXED (ไม่ overflow แล้ว)
             SliverAppBar(
               pinned: true,
               elevation: 0,
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               automaticallyImplyLeading: false,
-              toolbarHeight: 112,
+              toolbarHeight: 112, // 🔥 สำคัญ แก้ overflow
               flexibleSpace: const Padding(
                 padding: EdgeInsets.only(top: 10),
                 child: AppHeader(),
               ),
             ),
 
+            /// 🔽 CONTENT
             SliverToBoxAdapter(
               child: Column(
                 children: [
