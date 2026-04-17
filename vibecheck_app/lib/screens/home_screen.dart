@@ -128,63 +128,6 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  Future<void> _showAddTaskDialog() async {
-    final controller = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            'Add Task',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'Enter your task',
-              filled: true,
-              fillColor: const Color(0xFFF7F7F7),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7B5EA7),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () async {
-                final text = controller.text.trim();
-                if (text.isEmpty) return;
-                await FirebaseFirestore.instance.collection('tasks').add({
-                  'title': text,
-                  'done': false,
-                  'createdAt': Timestamp.now(),
-                  'userId': FirebaseAuth.instance.currentUser?.uid,
-                });
-                if (mounted) Navigator.pop(context);
-              },
-              child: const Text('Add', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   GoalTemplate? _findGoalById(String id) {
     final goals = buildGoalTemplatesForCurrentMonth();
     for (final goal in goals) {

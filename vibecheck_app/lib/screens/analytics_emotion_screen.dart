@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import '../widgets/header.dart';
 import '../widgets/emotion_colors.dart';
-import '../widgets/bottom_nav_bar.dart';
 
 class AnalyticsEmotionScreen extends StatefulWidget {
   const AnalyticsEmotionScreen({super.key});

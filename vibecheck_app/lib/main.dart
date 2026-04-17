@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 // screens
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
 import 'screens/task_screen.dart';
 import 'screens/timer_screen.dart';
 import 'screens/emotion_screen.dart';

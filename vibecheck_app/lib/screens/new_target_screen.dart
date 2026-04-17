@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import '../widgets/header.dart';
 import '../data/goal_templates.dart';
 import 'goal_detail_screen.dart';
 

@@ -15,9 +15,6 @@ class RemindersSoundsScreen extends StatefulWidget {
 }
 
 class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
-  static const MethodChannel _settingsChannel =
-      MethodChannel('com.example.vibecheck_app/settings');
-
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
@@ -239,48 +236,6 @@ class _RemindersSoundsScreenState extends State<RemindersSoundsScreen> {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;
-  }
-
-  Future<void> _showTestNotification() async {
-    final details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'vibecheck_reminders',
-        'VibeCheck Reminders',
-        channelDescription: 'แจ้งเตือนเป้าหมายและเสียงเตือน',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: reminderPlanSound,
-        enableVibration: vibration,
-        vibrationPattern: vibration
-            ? Int64List.fromList([0, 500, 200, 500])
-            : null,
-      ),
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: reminderPlanSound,
-      ),
-    );
-
-    await _notifications.show(
-      100,
-      'ทดสอบแจ้งเตือน',
-      'นี่คือการแจ้งเตือนตัวอย่างพร้อมเสียงและการสั่น',
-      details,
-    );
-    if (vibration) {
-      HapticFeedback.vibrate();
-    }
-  }
-
-  Future<void> _openAppNotificationSettings() async {
-    if (!Platform.isAndroid) return;
-
-    try {
-      await _settingsChannel.invokeMethod('openAppNotificationSettings');
-    } on PlatformException catch (error) {
-      debugPrint('Failed to open notification settings: ${error.message}');
-    }
   }
 
   @override

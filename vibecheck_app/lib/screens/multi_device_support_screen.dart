@@ -48,7 +48,6 @@ class _MultiDeviceSupportScreenState extends State<MultiDeviceSupportScreen> {
         detectedDeviceName =
             '${iosInfo.name} (${iosInfo.model})';
       } else if (Platform.isWindows) {
-        final windowsInfo = await deviceInfo.windowsInfo;
         detectedDeviceName = 'Windows PC';
       } else if (Platform.isMacOS) {
         final macInfo = await deviceInfo.macOsInfo;

@@ -47,14 +47,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(rangeStart))
         .get();
 
-    final lastEmotionSnap = await FirebaseFirestore.instance
-        .collection('emotions')
-        .where('userId', isEqualTo: uid)
-        .where('time',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(lastRangeStart))
-        .where('time', isLessThan: Timestamp.fromDate(lastRangeEnd))
-        .get();
-
     final taskSnap = await FirebaseFirestore.instance
         .collection('tasks')
         .where('userId', isEqualTo: uid)
@@ -86,7 +78,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         .get();
 
     final emotions = emotionSnap.docs.map((d) => d.data()).toList();
-    final lastEmotions = lastEmotionSnap.docs.map((d) => d.data()).toList();
     final tasks = taskSnap.docs.map((d) => d.data()).toList();
     final lastTasks = lastTaskSnap.docs.map((d) => d.data()).toList();
     final sessions = sessionSnap.docs.map((d) => d.data()).toList();
