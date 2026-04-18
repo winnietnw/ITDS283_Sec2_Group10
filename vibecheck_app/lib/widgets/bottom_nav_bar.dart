@@ -31,7 +31,7 @@ class _MainNavigationState extends State<MainNavigation> {
     Color(0xFFFFEFF3), // Home
     Color(0xFFFDFAF2), // Tasks
     Color(0xFFEFFFDF), // Timer
-    Color(0xFFF2F6FD), // Emotion
+    Color(0xFFF2F6FD), // Emotions
     Color(0xFFEDEDFF), // Settings
   ];
 
@@ -51,7 +51,7 @@ class _MainNavigationState extends State<MainNavigation> {
       _NavItem(icon: Icons.home_outlined,           activeIcon: Icons.home_rounded,           label: 'Home'),
       _NavItem(icon: Icons.check_box_outlined,      activeIcon: Icons.check_box_rounded,      label: 'Tasks'),
       _NavItem(icon: Icons.timer_outlined,          activeIcon: Icons.timer_rounded,          label: 'Time'),
-      _NavItem(icon: Icons.emoji_emotions_outlined, activeIcon: Icons.emoji_emotions_rounded, label: 'Emotion'),
+      _NavItem(icon: Icons.emoji_emotions_outlined, activeIcon: Icons.emoji_emotions_rounded, label: 'Emotions'),
       _NavItem(icon: Icons.settings_outlined,       activeIcon: Icons.settings_rounded,       label: 'Settings'),
     ];
 
