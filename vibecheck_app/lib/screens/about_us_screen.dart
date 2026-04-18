@@ -386,8 +386,8 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           await user.delete();
 
           if (!mounted) return;
-          Navigator.pop(context);
-          _showDeleteSuccess(context);
+          Navigator.of(context, rootNavigator: true)
+            .pushNamedAndRemoveUntil('/login', (route) => false);
         },
       ),
     );
