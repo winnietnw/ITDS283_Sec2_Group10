@@ -8,9 +8,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/task_screen.dart';
 import 'screens/timer_screen.dart';
-import 'screens/emotion_screen.dart';
 import 'screens/analytics_screen.dart';
-import 'screens/analytics_emotion_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/signup_screen.dart';
@@ -77,9 +75,7 @@ class VibeCheckApp extends StatelessWidget {
           '/home': (context) => MainNavigation(key: MainNavigation.navKey),
           '/task': (context) => const TaskScreen(),
           '/timer': (context) => const TimerScreen(),
-          '/emotion': (context) => const EmotionScreen(),
           '/analytics': (context) => const AnalyticsScreen(),
-          '/analytics_emotion': (context) => const AnalyticsEmotionScreen(),
           '/settings': (context) => const SettingsScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/timer-running': (context) => const TimerRunningScreen(
