@@ -60,6 +60,7 @@ class _TaskScreenState extends State<TaskScreen> {
 
   Stream<QuerySnapshot> get _categoryStream => FirebaseFirestore.instance
       .collection('classifications')
+      .where('userId', isEqualTo: _user?.uid)
       .orderBy('order')
       .snapshots();
 
@@ -652,11 +653,22 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
   }
 
   DateTime _thisWeekEnd() {
-    final now = DateTime.now();
-    final daysLeft = 7 - now.weekday;
-    final end = now.add(Duration(days: daysLeft));
-    return DateTime(end.year, end.month, end.day, 23, 59);
+  final now = DateTime.now();
+  // หาวันอาทิตย์ของสัปดาห์นี้
+  final daysToSunday = 7 - now.weekday; // วันอาทิตย์ = end of week
+  final sunday = now.add(Duration(days: daysToSunday));
+  final sundayDate = DateTime(sunday.year, sunday.month, sunday.day, 23, 59);
+
+  // ถ้า sunday ตรงกับพรุ่งนี้หรือวันนี้ → ใช้อาทิตย์หน้าแทน
+  final tomorrow = DateTime(now.year, now.month, now.day + 1);
+  final sundayDay = DateTime(sunday.year, sunday.month, sunday.day);
+  if (!sundayDay.isAfter(tomorrow)) {
+    final nextSunday = sunday.add(const Duration(days: 7));
+    return DateTime(nextSunday.year, nextSunday.month, nextSunday.day, 23, 59);
   }
+
+  return sundayDate;
+}
 
   String _formatDeadline(DateTime dt) {
     final now = DateTime.now();
@@ -765,6 +777,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('classifications')
+                .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                 .orderBy('order')
                 .snapshots(),
             builder: (context, snapshot) {
@@ -902,7 +915,8 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
                         .add(Duration(days: offset));
                     isSelected = _deadline!.year == target.year &&
                         _deadline!.month == target.month &&
-                        _deadline!.day == target.day;
+                        _deadline!.day == target.day&&
+                        _deadline != _thisWeekEnd();
                   }
                 }
 
